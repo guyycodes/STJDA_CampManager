@@ -16,7 +16,7 @@ export const StaffFormSelector = ({ selectedForm, onFormSelect, onClear }) => {
           Staff Forms
         </Typography>
         <RadioGroup value={isSelected ? selectedForm.split(':')[1] : ''} onChange={handleChange}>
-          <FormControlLabel value="bgLog" control={<Radio />} label="BG Log" />
+          <FormControlLabel value="unknown" control={<Radio />} label="N/A" />
         </RadioGroup>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
           <Button variant="outlined" onClick={onClear}>Clear</Button>
@@ -39,11 +39,11 @@ export const CamperFormSelector = ({ selectedForm, onFormSelect, onClear }) => {
     <Card sx={{ maxWidth: 345, m: 2, boxShadow: 3 }}>
       <CardContent>
         <Typography variant="subtitle1" gutterBottom>
-          Campers
+          Camp Attendants
         </Typography>
         <RadioGroup value={isSelected ? selectedForm.split(':')[1] : ''} onChange={handleChange}>
-          <FormControlLabel value="carbCounter" control={<Radio />} label="Carb Counter" />
-          <FormControlLabel value="medicalCheckIn" control={<Radio />} label="Medical Check-in" />
+          <FormControlLabel value="Intake" control={<Radio />} label="Intake Forms" />
+          <FormControlLabel value="Wrap Up" control={<Radio />} label="Close-out" />
         </RadioGroup>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
           <Button variant="outlined" onClick={onClear}>Clear</Button>
@@ -66,11 +66,11 @@ export const ParticipationFormSelector = ({ selectedForm, onFormSelect, onClear 
     <Card sx={{ maxWidth: 345, m: 2, boxShadow: 3 }}>
       <CardContent>
         <Typography variant="subtitle1" gutterBottom>
-          Participation Forms
+          Participant Forms
         </Typography>
         <RadioGroup value={isSelected ? selectedForm.split(':')[1] : ''} onChange={handleChange}>
-          <FormControlLabel value="camps" control={<Radio />} label="Camps" />
-          <FormControlLabel value="checkIn" control={<Radio />} label="Check-in" />
+          <FormControlLabel value="Accomodations" control={<Radio />} label="Accomodations" />
+          <FormControlLabel value="Release" control={<Radio />} label="Medical Release" />
         </RadioGroup>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
           <Button variant="outlined" onClick={onClear}>Clear</Button>

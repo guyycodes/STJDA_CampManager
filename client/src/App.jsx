@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { ProfileContainer } from './SideBar/ProfileSectionContainer';
-import { ProfileRedirect, Logout } from './LoginRedirects';
+import { ProfileRedirect, Logout, EditProfileRedirect } from './LoginRedirects';
 import { ApolloClient, InMemoryCache, ApolloProvider, createHttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { SignInSection } from './Login';
@@ -60,7 +60,7 @@ function App() {
           <Route path="/" index element={<SignInSection />} />
           {/* // redirections */}
           <Route path="/profile" element={<ProfileRedirect />} />
-          {/* <Route path="/edit/redirect" element={<EditProfileRedirect />} /> */}
+          <Route path="/edit/redirect" element={<EditProfileRedirect />} />
           <Route path="/logout" element={<Logout />} />
           {/* Profile page Route */}
           <Route path="/profile/authenticated" element={<ProfileContainer />} />

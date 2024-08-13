@@ -20,6 +20,7 @@ import { AboutUser, Camps,
   CareProfile, Volunteers,
   CareAndInsulin, 
   MedicationManager } from "./Profile";
+import { CamperFormSelector, StaffFormSelector, ParticipationFormSelector } from './Forms'
 import { ContactContainer } from "./Contact";
 import { SlideOut } from "./index";
 import Pica from 'pica';
@@ -256,7 +257,7 @@ const handleClear = () => { setSelectedForm(''); };
 
 const handleSectionChange = (section) => { userProfileStore.setSelectedSection(section); };
 
-  // Logic to save the changes
+  // Logic to save the changes, this is passed as a prop to the modal
 const handleSave = (personData, careData) => {
   
   setHasChanges(true);
@@ -534,7 +535,7 @@ const parseLocalStorage = (value) => {
                           )}
                         </>
                       )}
-                      {userProfileStore.selectedSection === "Forms" && (
+                      {userProfileStore.selectedSection === "Forms" && !d.isCamper && (
                         <Grid item>
                           <CardWrapper>
                             <StaffFormSelector
@@ -577,10 +578,21 @@ const parseLocalStorage = (value) => {
                           )}
                         </>
                       )}
-                      {userProfileStore.selectedSection === "Forms" && (
+                      {userProfileStore.selectedSection === "Forms" && !d.isCamper && (
                         <Grid item>
                           <CardWrapper>
                             <CamperFormSelector
+                              selectedForm={selectedForm}
+                              onFormSelect={handleFormSelect}
+                              onClear={handleClear}
+                            />
+                          </CardWrapper>
+                        </Grid>
+                      )}
+                      {userProfileStore.selectedSection === "Forms" && !(d.isAdmin || d.isVolunteer) && (
+                        <Grid item>
+                          <CardWrapper>
+                            <ParticipationFormSelector
                               selectedForm={selectedForm}
                               onFormSelect={handleFormSelect}
                               onClear={handleClear}
@@ -611,17 +623,6 @@ const parseLocalStorage = (value) => {
                             </CardWrapper>
                           </Grid>
                         </>
-                      )}
-                      {userProfileStore.selectedSection === "Forms" && (
-                        <Grid item>
-                          <CardWrapper>
-                            <ParticipationFormSelector
-                              selectedForm={selectedForm}
-                              onFormSelect={handleFormSelect}
-                              onClear={handleClear}
-                            />
-                          </CardWrapper>
-                        </Grid>
                       )}
                     </Grid>
                   </Grid>
