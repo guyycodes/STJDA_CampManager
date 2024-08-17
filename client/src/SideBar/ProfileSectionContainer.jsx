@@ -28,6 +28,7 @@ import { UPDATE_PERSON, UPDATE_CAMPER_CARE_DATA } from "../util/gpl/mutations";
 import { useMutation } from "@apollo/client";
 import { EditProfileModal } from "./Modals";
 import { handleApolloError } from "../util/gpl/handleApolloError";
+import { ConfirmationForm } from './Forms/FormManger'
 
 const StyledCard = styled(Paper)(({ theme }) => ({
   height: '100%',
@@ -53,6 +54,7 @@ export const ProfileContainer = observer(() => {
   const [hasChanges, setHasChanges] = useState(false);
   const [selectedForm, setSelectedForm] = useState('');
   const [wasConfirmed, setWasConfirmed] = useState(false);
+  const [activeForm, setActiveForm] = useState(null)
 
   const ls_data = localStorage.getItem('STJDA_StoreSnapshot');  // grabbing the data snapshot from persistant storage
   const d = JSON.parse(ls_data);
@@ -85,6 +87,10 @@ const [updateCamperCareData, { loading: updateCareDataLoading, error: updateCare
   },
   onError: (error) => handleApolloError(error, 'fetching updateCamperCareData - ProfileContainer')
 })
+
+useEffect(() => {
+  console.log('Active Form:', activeForm);
+}, [activeForm]);
 
 useEffect(() => {
   if (!parseLocalStorage('banner') && imageBase64) {
@@ -290,6 +296,21 @@ const handleMedicationUpdate = (updatedMedications) => {
 const handleLogout = () => {
   setLogoutDialogOpen(true);
 };
+
+const formPicker = () => {
+  const currForm = selectedForm.split(':')[1];
+  
+  switch (currForm) {
+    case 'Confirm Reservation':
+      setActiveForm('ConfirmReservation');
+      break;
+    case 'Close-out':
+      setActiveForm('CloseOut');
+      break;
+    default:
+      setActiveForm(null);
+  }
+}
 
 const confirmLogout = () => {
   setLogoutDialogOpen(false);
@@ -512,7 +533,7 @@ const parseLocalStorage = (value) => {
 
               {userProfileStore.selectedSection === "Contact" ? (
                 <ContactContainer />
-              ) : (
+              ) : (userProfileStore.selectedSection === "Forms" && activeForm === 'ConfirmReservation') ? <ConfirmationForm activeForm={setActiveForm}/> : (
                 <Grid container spacing={4}>
                   {/* Left Column */}
                   <Grid item xs={12} md={4}>
@@ -535,6 +556,7 @@ const parseLocalStorage = (value) => {
                           )}
                         </>
                       )}
+                  
                       {userProfileStore.selectedSection === "Forms" && !d.isCamper && (
                         <Grid item>
                           <CardWrapper>
@@ -585,6 +607,7 @@ const parseLocalStorage = (value) => {
                               selectedForm={selectedForm}
                               onFormSelect={handleFormSelect}
                               onClear={handleClear}
+                              handleNext={formPicker}
                             />
                           </CardWrapper>
                         </Grid>
@@ -602,7 +625,7 @@ const parseLocalStorage = (value) => {
                       )}
                     </Grid>
                   </Grid>
-
+                
                   {/* Right Column */}
                   <Grid item xs={12} md={4}>
                     <Grid container direction="column" spacing={4}>

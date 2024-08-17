@@ -1,82 +1,71 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, Typography, Radio, RadioGroup, FormControlLabel, Button, Box } from '@mui/material';
 
-export const StaffFormSelector = ({ selectedForm, onFormSelect, onClear }) => {
-  const formType = 'staff';
-  const isSelected = selectedForm.startsWith(`${formType}:`);
+const FormSelector = ({ type, options, selectedForm, onFormSelect, onClear, handleNext }) => {
+  const isSelected = selectedForm.startsWith(`${type}:`);
 
   const handleChange = (event) => {
-    onFormSelect(formType, event.target.value);
+    onFormSelect(type, event.target.value);
   };
+
 
   return (
     <Card sx={{ maxWidth: 345, m: 2, boxShadow: 3 }}>
       <CardContent>
         <Typography variant="subtitle1" gutterBottom>
-          Staff Forms
+          {options.title}
         </Typography>
         <RadioGroup value={isSelected ? selectedForm.split(':')[1] : ''} onChange={handleChange}>
-          <FormControlLabel value="unknown" control={<Radio />} label="N/A" />
+          {options.forms.map((form) => (
+            <FormControlLabel key={form.value} value={form.value} control={<Radio />} label={form.label} />
+          ))}
         </RadioGroup>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
           <Button variant="outlined" onClick={onClear}>Clear</Button>
-          <Button variant="contained" disabled={!isSelected}>Continue</Button>
+          <Button variant="contained" disabled={!isSelected} onClick={handleNext}>Continue</Button>
         </Box>
       </CardContent>
     </Card>
   );
 };
 
-export const CamperFormSelector = ({ selectedForm, onFormSelect, onClear }) => {
-  const formType = 'camper';
-  const isSelected = selectedForm.startsWith(`${formType}:`);
+export const StaffFormSelector = (props) => (
+  <FormSelector
+    {...props}
+    type="staff"
+    options={{
+      title: "Staff Forms",
+      forms: [
+        { value: "unknown", label: "N/A" }
+      ]
+    }}
+  />
+);
 
-  const handleChange = (event) => {
-    onFormSelect(formType, event.target.value);
-  };
+export const CamperFormSelector = (props) => (
+  <FormSelector
+    {...props}
+    type="camper"
+    options={{
+      title: "Camp Attendants",
+      forms: [
+        { value: "Confirm Reservation", label: "Confirm Reservation" },
+        { value: "Unknown", label: "N/A" }
+      ]
+    }}
+  />
+);
 
-  return (
-    <Card sx={{ maxWidth: 345, m: 2, boxShadow: 3 }}>
-      <CardContent>
-        <Typography variant="subtitle1" gutterBottom>
-          Camp Attendants
-        </Typography>
-        <RadioGroup value={isSelected ? selectedForm.split(':')[1] : ''} onChange={handleChange}>
-          <FormControlLabel value="Intake" control={<Radio />} label="Intake Forms" />
-          <FormControlLabel value="Wrap Up" control={<Radio />} label="Close-out" />
-        </RadioGroup>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-          <Button variant="outlined" onClick={onClear}>Clear</Button>
-          <Button variant="contained" disabled={!isSelected}>Continue</Button>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-};
-
-export const ParticipationFormSelector = ({ selectedForm, onFormSelect, onClear }) => {
-  const formType = 'participation';
-  const isSelected = selectedForm.startsWith(`${formType}:`);
-
-  const handleChange = (event) => {
-    onFormSelect(formType, event.target.value);
-  };
-
-  return (
-    <Card sx={{ maxWidth: 345, m: 2, boxShadow: 3 }}>
-      <CardContent>
-        <Typography variant="subtitle1" gutterBottom>
-          Participant Forms
-        </Typography>
-        <RadioGroup value={isSelected ? selectedForm.split(':')[1] : ''} onChange={handleChange}>
-          <FormControlLabel value="Accomodations" control={<Radio />} label="Accomodations" />
-          <FormControlLabel value="Release" control={<Radio />} label="Medical Release" />
-        </RadioGroup>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-          <Button variant="outlined" onClick={onClear}>Clear</Button>
-          <Button variant="contained" disabled={!isSelected}>Continue</Button>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-};
+export const ParticipationFormSelector = (props) => (
+  <FormSelector
+    {...props}
+    type="participation"
+    options={{
+      title: "Participant Forms",
+      forms: [
+        { value: "Accomodations", label: "Accomodations" },
+        { value: "Release", label: "Medical Release" }
+      ]
+    }}
+  />
+);
