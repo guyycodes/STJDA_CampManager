@@ -17,9 +17,11 @@ import {
   CircularProgress,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useFetch } from '../../../util/ApiHooks';
+import { useFetch, useSendToAPI } from '../../../util/ApiHooks';
 import { DynamicForm } from './RenderChildComponents/RenderConfirmationForm';
 import { parseApiData } from './FormHelpers/ParesApi'
+import { EmailModal } from './Modals/ConfirmationModal';
+import { useNavigate } from 'react-router-dom';
 
 const campOptions = ['Residential Camp', 'Robotics Camp', 'Science Camp', 'Nature Camp'];
 const genderOptions = ['Male', 'Female', 'Other'];
@@ -27,14 +29,42 @@ const adultSizes = ['XS', 'S', 'M', 'L', 'XL'];
 const youthSizes = ['Youth-XS', 'Youth-S', 'Youth-M', 'Youth-L', 'Youth-XL'];
 
 export const ConfirmationForm = ({ activeForm }) => {
-    const { data, loading, error, LoadingComponent } = useFetch('http://34.135.9.49:3000/api/minioG/getAll/stjda-signup-forms');
-    const { data: componentData, loading: componentLoading, error: componentError } = {
-        data: data, loading: LoadingComponent, error: error
-    };
-    // State to hold the filtered results
-  const [filteredResults, setFilteredResults] = useState([]);
-  const [isApplying, setIsApplying] = useState(false);
-  const [allData, setAllData] = useState({});
+
+  const navigate = useNavigate();
+  // State to hold the filtered results
+const [filteredResults, setFilteredResults] = useState([]);
+const [isApplying, setIsApplying] = useState(false);
+const [allData, setAllData] = useState({});
+const [modalOpen, setModalOpen] = useState(false);
+const [formSaveSucess ,setFormSaveSucess]=useState({success: null, message: ""})
+const [accountCreatedSucess, setAccountCreatedSucess] = useState({success: null, message: ""})
+  // call the backend server first, and it will grab the data from the database for the filtering
+    const { data, loading, error, LoadingComponent } = useFetch('http://localhost:3000/api/forms/DiabetesManagement');
+    const { data: componentData, 
+            loading: componentLoading, 
+            error: componentError 
+          } = {
+            data: data, 
+            loading: LoadingComponent, 
+            error: error,
+          };
+    // send post request Hook
+    const {
+      sendRequest: sendFormData,
+      loading: sendFormLoading,
+      error: sendFormError,
+      response: formResponse,
+      LoadComponent: FormLoadingComponent
+    } = useSendToAPI('http://localhost:3000/api/forms/DiabetesManagement/completed-stjda-signup-forms', 'POST');
+
+    const {
+      sendRequest: createAccount,
+      loading: createAccountLoading,
+      error: createAccountError,
+      response: accountResponse,
+      LoadComponent: AccountLoadingComponent
+    } = useSendToAPI('http://localhost:3000/api/signup/create', 'POST');
+    
     // State to hold the Trie data structures for each filterable field
   // Tries are used for efficient prefix-based searching
   const [attributeMaps, setAttributeMaps] = useState({
@@ -116,6 +146,7 @@ export const ConfirmationForm = ({ activeForm }) => {
 // Effect hook to initialize Tries when data is loaded
 useEffect(() => {
     if (data) {
+      console.log("Data: ", data)
       const newMaps = {
         firstName: new Map(),
         lastName: new Map(),
@@ -184,10 +215,77 @@ useEffect(() => {
       }));
     }
   };
+
+  const handleFinalSubmit = async (email, signatureDataURL, isCompleted) => {
+    const dataToSend = { 
+      ...formData, 
+      newAccountEmail: email, 
+      signature: signatureDataURL,
+      isCompleted: isCompleted,
+      role: 'camper'
+    };
+  
+    try {
+      // Save the completed form in object storage
+      const saveFormResponse = await sendFormData(dataToSend);
+  
+      if (saveFormResponse.status === 200) {
+        console.log('The data is saved:', saveFormResponse.data);
+        setFormSaveSucess({ success: true, message: "Data successfully saved" });
+  
+        try {
+          // Create the account using the new endpoint and PUT method
+          const createAccountResponse = await createAccount(dataToSend);
+          console.log('After account creation, response:', createAccountResponse);
+
+          if (createAccountResponse.status === 200) {
+            console.log('Setting account created success');
+            setAccountCreatedSucess({ success: true, message: "New account successfully created" });
+            // setModalOpen(false);
+            // Handle successful account creation
+          } else {
+            console.log('Account creation failed');
+            setAccountCreatedSucess({ success: false, message: "Failed to create account" });
+          }
+        } catch (error) {
+          setAccountCreatedSucess({ success: false, message: "Failed to create account" });
+          handleApiError(error, 'Account creation');
+        }
+      } else {
+        console.log('Failed to send data to Minio');
+        setFormSaveSucess({ success: false, message: "Failed to save data" });
+      }
+    } catch (error) {
+      handleApiError(error, 'Data sending');
+
+    }
+    // setModalOpen(false);  // Always close the modal at the end
+  };
+  
+  const handleApiError = (error, process) => {
+    console.error(`Error in ${process}:`, error);
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.log(error.response.data);
+      console.log(error.response.status);
+      console.log(error.response.headers);
+      errorMessage = error.response.data.message || errorMessage;
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.log(error.request);
+      errorMessage = "No response received from server";
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.log('Error', error.message);
+      errorMessage = error.message;
+    }
+  };
   
     // Handle form submission
-  const handleSubmit = (event, resultIndex = null) => {
+  const handleSubmit = async (event, resultIndex = null) => {
     event.preventDefault();
+
     if (resultIndex !== null) {
       const updatedResult = filteredResults[resultIndex];
       console.log('updatedResult: ', updatedResult);
@@ -199,16 +297,18 @@ useEffect(() => {
             formData: updatedResult.formData
         }
       }))
-      // Here you would use the useSendToAPI hook to send the data
     } else {
-      console.log('Form submitted:', formData);
-      // Here you would use the useSendToAPI hook to send the data
-    }
-  };
-
-  useEffect(() => {
-    console.log('allData: ', allData);
-  }, [allData]);
+        try {
+          if(!modalOpen){
+            setModalOpen(true);
+          }else{
+            setModalOpen(false)
+          }
+        } catch (err) {
+          console.error('Error sending data:', err);
+        }
+      }
+    };
 
  // Handle changes to filter inputs
  const handleFilterChange = (event) => {
@@ -245,9 +345,9 @@ const handleApplyFilters = () =>{
 const applyFilters = () => {
     const currentFilters = filters;
     if (data) {
-      console.log("Applying filters:", currentFilters);
+      // console.log("Applying filters:", currentFilters);
       let matchingIndices = new Set(data.map((_, index) => index));
-      console.log("Initial matching indices:", matchingIndices);
+      // console.log("Initial matching indices:", matchingIndices);
   
       if (!currentFilters.showAll) {
         const applyFilter = (filterValue, mapName) => {
@@ -283,9 +383,7 @@ const applyFilters = () => {
           matchingIndices = new Set([...matchingIndices].filter(x => genderMatches.has(x)));
         }
       }
-  
-      console.log("Final matching indices:", matchingIndices);
-  
+      // console.log("Final matching indices:", matchingIndices);
       // Convert matching indices back to full data objects
       const results = [...matchingIndices].map(index => {
         const entry = data[index];
@@ -296,8 +394,7 @@ const applyFilters = () => {
           formData: parseApiData(content)
         };
       });
-      console.log("Final results:", results);
-  
+      // console.log("Final results:", results);
       // Sort results by last name and update state  
       const sortedResults = results.sort((a, b) => 
         a.registrationFormData.lastName.localeCompare(b.registrationFormData.lastName)
@@ -307,6 +404,7 @@ const applyFilters = () => {
       setFilteredResults(sortedResults);
     }
   };
+
 
 // Render the filter UI
   const renderFilters = () => (
@@ -475,6 +573,7 @@ const applyFilters = () => {
   if (error) return <Box>Error: {error.message}</Box>;
 
   return (
+    <>
     <Paper elevation={3} style={{ padding: '20px', margin: '20px' }}>
     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
       <Typography variant="h4">
@@ -507,5 +606,17 @@ const applyFilters = () => {
         <Typography>No results found. Please adjust your filters.</Typography>
       )}
     </Paper>
+    <EmailModal
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+        }}
+        onSubmit={handleFinalSubmit}
+        saveSuccess={formSaveSucess}
+        accountCreatedSuccess={accountCreatedSucess}
+      />
+      {loading && <p>Loading...</p>}
+      {error && <p>Error: {error.message}</p>}
+    </>
   );
 };

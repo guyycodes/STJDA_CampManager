@@ -12,7 +12,10 @@ export const useFetch = (url) => {
       const startTime = Date.now();
       try {
         const response = await axios.get(url);
-        const parsedData = parseAndShapeData(response.data);
+        console.log("response.data.data.objects", response.data.data);
+        const parsedData = parseAndShapeData(response.data.data);
+        // console.log("response.data.data.objects", response.data);
+        // const parsedData = parseAndShapeData(response.data);
         setData(parsedData);
       } catch (error) {
         setError(error);

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 import { CircularProgress } from "@mui/material";
 
@@ -21,6 +21,7 @@ export const useSendToAPI = (url, method = 'POST') => {
         data,
       });
       setResponse(result.data);
+      return result; // Return the response data
     } catch (err) {
       setError(err);
     } finally {
@@ -34,11 +35,12 @@ export const useSendToAPI = (url, method = 'POST') => {
     }
   }, [url, method]);
 
-  const LoadingComponent = () => (
+
+  const LoadComponent = () => (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
       <CircularProgress />
     </div>
   );
 
-  return { sendRequest, loading, error, response, LoadingComponent };
+  return { sendRequest, loading, error, response, LoadComponent };
 };

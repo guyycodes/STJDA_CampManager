@@ -110,7 +110,7 @@ async function connectToRedis() {
       //   await seedDatabase(); 
       // }
 
-    // app.post('/api', (req, res) => {
+    // app.post('/api/send-new-account-login', (req, res) => {
     //     console.info('Get was used');
     //     console.log('This email will be contact: ' + req.body.email);
     //     const templateParams = {

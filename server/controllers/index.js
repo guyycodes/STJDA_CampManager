@@ -7,7 +7,7 @@ const auth = require('./api/GoogleAuthentication_routes')
 const newUser = require('./api/newuser_routes')
 const redis = require('./api/cacheWithRedis')
 const admin = require('./api/administrators')
-// const dashboard = require('./api/dashboard_routes');
+const formData = require('./api/form_data_routes');
 // const logout = require('./api/logout_routes')
 const login = require('./api/login_routes')
 // for ping
@@ -15,7 +15,7 @@ const login = require('./api/login_routes')
 // router.use('/ping', ping)
 
 // for the dashboard
-// router.use('/dashboard', dashboard)
+router.use('/forms', formData)
 // for signing out
 // router.use('/logout', logout)
 // for loging in directly

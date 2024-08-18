@@ -140,7 +140,7 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
       fullWidth: true,
       label: field.label,
       name: field.name,
-      value: getFieldValue(field.name, field.type),
+      value: String(getFieldValue(field.name, field.type)),
       onChange: (e) => handleLocalChange(e, field.name),
       required: field.required,
       error: !!errors[field.name],
