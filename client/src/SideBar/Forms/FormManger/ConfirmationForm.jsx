@@ -21,7 +21,7 @@ import { useFetch, useSendToAPI } from '../../../util/ApiHooks';
 import { DynamicForm } from './RenderChildComponents/RenderConfirmationForm';
 import { parseApiData } from './FormHelpers/ParesApi'
 import { EmailModal } from './Modals/ConfirmationModal';
-import { useNavigate } from 'react-router-dom';
+
 
 const campOptions = ['Residential Camp', 'Robotics Camp', 'Science Camp', 'Nature Camp'];
 const genderOptions = ['Male', 'Female', 'Other'];
@@ -30,7 +30,6 @@ const youthSizes = ['Youth-XS', 'Youth-S', 'Youth-M', 'Youth-L', 'Youth-XL'];
 
 export const ConfirmationForm = ({ activeForm }) => {
 
-  const navigate = useNavigate();
   // State to hold the filtered results
 const [filteredResults, setFilteredResults] = useState([]);
 const [isApplying, setIsApplying] = useState(false);
@@ -39,33 +38,33 @@ const [modalOpen, setModalOpen] = useState(false);
 const [formSaveSucess ,setFormSaveSucess]=useState({success: null, message: ""})
 const [accountCreatedSucess, setAccountCreatedSucess] = useState({success: null, message: ""})
   // call the backend server first, and it will grab the data from the database for the filtering
-    const { data, loading, error, LoadingComponent } = useFetch('http://localhost:3000/api/forms/DiabetesManagement');
-    const { data: componentData, 
-            loading: componentLoading, 
-            error: componentError 
-          } = {
-            data: data, 
-            loading: LoadingComponent, 
-            error: error,
-          };
-    // send post request Hook
-    const {
-      sendRequest: sendFormData,
-      loading: sendFormLoading,
-      error: sendFormError,
-      response: formResponse,
-      LoadComponent: FormLoadingComponent
-    } = useSendToAPI('http://localhost:3000/api/forms/DiabetesManagement/completed-stjda-signup-forms', 'POST');
+  const { data, loading, error, LoadingComponent } = useFetch('http://localhost:3000/api/forms/DiabetesManagement');
+  const { data: componentData, 
+          loading: componentLoading, 
+          error: componentError 
+        } = {
+          data: data, 
+          loading: LoadingComponent, 
+          error: error,
+        };
+  // send post request Hook
+  const {
+    sendRequest: sendFormData,
+    loading: sendFormLoading,
+    error: sendFormError,
+    response: formResponse,
+    LoadComponent: FormLoadingComponent
+  } = useSendToAPI('http://localhost:3000/api/forms/DiabetesManagement/completed-stjda-signup-forms', 'POST');
 
-    const {
-      sendRequest: createAccount,
-      loading: createAccountLoading,
-      error: createAccountError,
-      response: accountResponse,
-      LoadComponent: AccountLoadingComponent
-    } = useSendToAPI('http://localhost:3000/api/signup/create', 'POST');
-    
-    // State to hold the Trie data structures for each filterable field
+  const {
+    sendRequest: createAccount,
+    loading: createAccountLoading,
+    error: createAccountError,
+    response: accountResponse,
+    LoadComponent: AccountLoadingComponent
+  } = useSendToAPI('http://localhost:3000/api/signup/send-email', 'POST');
+  
+  // State to hold the Trie data structures for each filterable field
   // Tries are used for efficient prefix-based searching
   const [attributeMaps, setAttributeMaps] = useState({
     firstName: new Map(),
@@ -121,7 +120,6 @@ const [accountCreatedSucess, setAccountCreatedSucess] = useState({success: null,
     hypoglycemiaTreatment: '',//
     diabetesManagementStruggles: '',//
     glucoseSensitiveFoods: '',//
-    //
     diabetesPhysician: '',//
     officePhoneNumber: '',//
     diagnosisDate: '',//
@@ -240,15 +238,15 @@ useEffect(() => {
 
           if (createAccountResponse.status === 200) {
             console.log('Setting account created success');
-            setAccountCreatedSucess({ success: true, message: "New account successfully created" });
+            setAccountCreatedSucess({ success: true, message: "New account workflow successfully instantiated" });
             // setModalOpen(false);
             // Handle successful account creation
           } else {
             console.log('Account creation failed');
-            setAccountCreatedSucess({ success: false, message: "Failed to create account" });
+            setAccountCreatedSucess({ success: false, message: "Failed to instantiated account workflow" });
           }
         } catch (error) {
-          setAccountCreatedSucess({ success: false, message: "Failed to create account" });
+          setAccountCreatedSucess({ success: false, message: "Failed to instantiated account workflow" });
           handleApiError(error, 'Account creation');
         }
       } else {
@@ -610,6 +608,8 @@ const applyFilters = () => {
         open={modalOpen}
         onClose={() => {
           setModalOpen(false);
+          setFormSaveSucess({success: null, message: ""})
+          setAccountCreatedSucess({success: null, message: ""})
         }}
         onSubmit={handleFinalSubmit}
         saveSuccess={formSaveSucess}

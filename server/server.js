@@ -7,7 +7,8 @@ const cors = require('cors')
 const { config } = require('dotenv');
 const controllers = require('./controllers/index.js')
 const models = require('./models/index.js')
-
+const crypto = require('crypto');
+const emailjs = require('@emailjs/nodejs');
 const Redis = require('ioredis');
 const redisClient = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
@@ -16,7 +17,6 @@ const redisClient = new Redis({
 // import { readFileSync } from "fs";
 // import connectDB from './config/connection.js'
 // import seedDatabase from './config/seeds.js'; 
-// import emailjs from '@emailjs/nodejs';
 
 
 config({ path: '.env' });
@@ -32,35 +32,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public'))); 
 app.use(express.json());
 app.use(cookieParser());
-
-// app.use((req, res, next) => {
-//   console.log(`Request received: ${req.method} ${req.url}`);
-//   console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  
-//   if (req.method === 'PUT' || req.method === 'POST') {
-//     let body = '';
-//     req.on('data', chunk => {
-//       body += chunk.toString();
-//       if (body.length > 1e6) req.connection.destroy(); // Prevent very large requests
-//     });
-    
-//     req.on('end', () => {
-//       console.log(`Request body size: ${body.length} bytes`);
-//       console.log('Request body (truncated):', body.substring(0, 200) + '...');
-//       req.rawBody = body;  // Store the raw body for later use if needed
-//       next();
-//     });
-//   } else {
-//     next();
-//   }
-// });
-
-// // Add this after your routes to catch errors
-// app.use((error, req, res, next) => {
-//   console.error('Error occurred:', error);
-//   res.status(500).json({ error: error.message });
-//   next();
-// });
 
 app.use("/api", controllers);
 
@@ -101,35 +72,9 @@ async function connectToRedis() {
 (async () => {
 
     try {
-
       connectToRedis();
       console.log('Connection has been established successfully.');
   //  await syncAllModels()    
-   
-      // if (process.env.NODE_ENV !== 'production') {
-      //   await seedDatabase(); 
-      // }
-
-    // app.post('/api/send-new-account-login', (req, res) => {
-    //     console.info('Get was used');
-    //     console.log('This email will be contact: ' + req.body.email);
-    //     const templateParams = {
-    //       email: req.body.email,
-    //     };
-    //     console.log(process.env.EMAILJS_PUBLIC);
-
-        // emailjs.send('service_7098943', 'template_5grsipc', templateParams, {
-        //     publicKey: process.env.EMAILJS_PUBLIC,
-        //     privateKey: process.env.EMAILJS_PRIVATE, // optional, highly recommended for security reasons
-        //   }).then((response) => {
-        //       console.log('SUCCESS!', response.status, response.text);
-        //     },
-        //     (err) => {
-        //       console.log('FAILED...', err);
-        //     },
-        //   );
-        // res.json({message: 'Everything went okay'});
-    // });
 
     console.log("env" + process.env.NODE_ENV +"\n")
 

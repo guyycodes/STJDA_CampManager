@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const uuidv4 = require('uuid').v4;
-const bcrypt = require('bcrypt')
+const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 const { config } = require('dotenv');
@@ -92,27 +92,46 @@ router.post('/DiabetesManagement/:bucket', async (req, res) => {
       if (!req.body) {
         return res.status(400).json({ error: 'Request body is missing' });
       }
+  
       const { bucket } = req.params;
-      const userData = req.body; // Assuming the client sends the user data in the request body
+      const userData = req.body;
+  
+      // Compute checksum
+      const checksum = crypto
+        .createHash('sha256')
+        .update(JSON.stringify(userData))
+        .digest('hex');
+  
+      // Use checksum as the key
       const updateResult = await fetch(`http://34.135.9.49:3000/api/minioP/${bucket}`, {
-          method: 'POST',
-          headers: {
+        method: 'POST',
+        headers: {
           'Content-Type': 'application/json',
-          //   'Authorization': `Bearer ${req.cookies.jwt}`
-          },
-          body: JSON.stringify(userData)
+          // 'Authorization': `Bearer ${req.cookies.jwt}`
+        },
+        body: JSON.stringify({
+          key: checksum,
+          data: userData
+        })
       });
-      if (!updateResult.status === 200) {
+  
+      if (updateResult.status !== 200) {
         throw new Error(`HTTP error! status: ${updateResult.status}`);
       }
+  
+      const resultData = await updateResult.json();
+      
+      // alter the original data entry we changed, youll need to pass along the key and access that bucket
+
 
       res.status(200).json({ 
         message: "Data successfully sent to MinIO",
         bucket: bucket,
-        data: updateResult,
-        key: updateResult?.key,
-        syncTime: new Date().toISOString() 
+        key: checksum,
+        syncTime: new Date().toISOString(),
+        minioResponse: resultData
       });
+
     } catch (error) {
       console.error("Error sending data to MinIO:", error);
       res.status(500).json({ error: "Error sending data to MinIO" });

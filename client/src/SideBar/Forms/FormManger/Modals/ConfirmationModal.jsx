@@ -13,6 +13,22 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
   const [hasError, setHasError] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
+  // New effect to clear state when modal closes
+  useEffect(() => {
+    if (!open) {
+      setEmail('');
+      setIsDrawing(false);
+      setIsProcessing(false);
+      setMessages([]);
+      setHasError(false);
+      setIsCompleted(false);
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext('2d');
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+    }
+  }, [open]);
+
   useEffect(() => {
     if (saveSuccess?.success !== null) {
       addMessage(saveSuccess.success, saveSuccess.message || (saveSuccess.success ? 'Form saved successfully!' : 'Failed to save form.'));
@@ -22,7 +38,7 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
 
   useEffect(() => {
     if (accountCreatedSuccess?.success !== null) {
-      addMessage(accountCreatedSuccess.success, accountCreatedSuccess.message || (accountCreatedSuccess.success ? 'Account created successfully!' : 'Failed to create account.'));
+      addMessage(accountCreatedSuccess.success, accountCreatedSuccess.message || (accountCreatedSuccess.success ? 'Account sequencing instantiated successfully!' : 'Failed to instantiated account sequence.'));
       setHasError(!accountCreatedSuccess.success);
     }
   }, [accountCreatedSuccess]);

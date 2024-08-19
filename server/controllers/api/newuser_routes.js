@@ -3,84 +3,120 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const db = require('../../models');
 const { config } = require('dotenv');
+const crypto = require('crypto');
+const emailjs = require('@emailjs/nodejs');
 const { update } = require('../../models/BGTargets');
 const { isAdmin } = require('../../utils/admins/validateAdmins');
 config({ path: './.env' });
-let userData = {};
 
- //     const templateParams = {
-    //       email: req.body.email,
-    //     };
-    //     console.log(process.env.EMAILJS_PUBLIC);
 
-        // emailjs.send('service_7098943', 'template_5grsipc', templateParams, {
-        //     publicKey: process.env.EMAILJS_PUBLIC,
-        //     privateKey: process.env.EMAILJS_PRIVATE, // optional, highly recommended for security reasons
-        //   }).then((response) => {
-        //       console.log('SUCCESS!', response.status, response.text);
-        //     },
-        //     (err) => {
-        //       console.log('FAILED...', err);
-        //     },
-        //   );
 // JWT setup
 const jwtSecret = 'mysecretsshhhhh';
 const jwtExpiration = '2h';
-// name: 'Jack Black',
-// [0]   age: 38,
-// [0]   dateOfBirth: '1986-06-24',
-// [0]   isMDI: true,
-// [0]   pumpModelBrand: 'pupm123',
-// [0]   isCGM: true,
-// [0]   cgmModelBrand: 'cgm 456',
-// [0]   legalGuardian: 'test',
-// [0]   contactPhone: '3034958899',
-// [0]   carbsBreakfast: '56',
-// [0]   carbsLunch: '78',
-// [0]   carbsDinner: '90',
-// [0]   mealtimeRestrictions: 'bread',
-// [0]   insulinToCarbRatio: '1:5',
-// [0]   correctionFactor: '34',
-// [0]   target: '99',
-// [0]   mdiInsulinType: 'qwerty6',
-// [0]   allergies: 'yes',
-// [0]   otherDiagnosis: 'Hashimoto',
-// [0]   otcMedications: 'Advil',
-// [0]   otherPrescriptions: 'Penicilin',
-// [0]   insulinFor15gSnack: true,
-// [0]   correctWith15gOrLess: true,
-// [0]   hyperglycemiaSymptoms: 'Hyperness',
-// [0]   hyperglycemiaTreatment: 'sleep',
-// [0]   hypoglycemiaSymptoms: 'tiredness',
-// [0]   hypoglycemiaTreatment: 'excercise',
-// [0]   diabetesManagementStruggles: 'confidence',
-// [0]   glucoseSensitiveFoods: 'bread',
-// [0]   diabetesPhysician: 'seth',
-// [0]   officePhoneNumber: '1234567890',
-// [0]   diagnosisDate: '2024-08-05',
-// [0]   gender: 'male',
-// [0]   rapidActingInsulinType: 'qwerty5',
-// [0]   longActingInsulinType: 'qwerty6',
-// [0]   parent1FirstName: 'Megan ',
-// [0]   parent1LastName: 'Fox',
-// [0]   parent1Mobile: '3034958899',
-// [0]   parent2FirstName: 'Cardi',
-// [0]   parent2LastName: 'B.',
-// [0]   parent2Mobile: '1234567890',
-// [0]   preferredLanguage: 'qwerty3',
-// [0]   preferredRoommate: 'qwerty7',
-// [0]   sessions: [ 'session1' ],
-// [0]   specialInstructions: 'no',
-// [0]   primaryCarePhysician: 'donna',
-// [0]   submissionDate: '2024-08-10',
-// [0]   tShirtSize: 'L',
-// [0]   selectedCamps: 'Residential Camp, Robotics Camp, Science Camp, Nature Camp',
-// [0]   insulinType: 'qwerty6',
-// [0]   parent1Email: 'fake@test.com',
-// [0]   document: null,
-// [0]   signature: 'Guy Beals',
-// [0]   newAccountEmail: 'guymorganb@gmail.com',
-// [0]   role: 'camper'
+//   name: 'Jack Black',
+//   age: 38,
+//   dateOfBirth: '1986-06-24',
+//   isMDI: true,
+//   pumpModelBrand: 'pupm123',
+//   isCGM: true,
+//   cgmModelBrand: 'cgm 456',
+//   legalGuardian: 'test',
+//   contactPhone: '3034958899',
+//   carbsBreakfast: '56',
+//   carbsLunch: '78',
+//   carbsDinner: '90',
+//   mealtimeRestrictions: 'bread',
+//   insulinToCarbRatio: '1:5',
+//   correctionFactor: '34',
+//   target: '99',
+//   mdiInsulinType: 'qwerty6',
+//   allergies: 'yes',
+//   otherDiagnosis: 'Hashimoto',
+//   otcMedications: 'Advil',
+//   otherPrescriptions: 'Penicilin',
+//   insulinFor15gSnack: true,
+//   correctWith15gOrLess: true,
+//   hyperglycemiaSymptoms: 'Hyperness',
+//   hyperglycemiaTreatment: 'sleep',
+//   hypoglycemiaSymptoms: 'tiredness',
+//   hypoglycemiaTreatment: 'excercise',
+//   diabetesManagementStruggles: 'confidence',
+//   glucoseSensitiveFoods: 'bread',
+//   diabetesPhysician: 'seth',
+//   officePhoneNumber: '1234567890',
+//   diagnosisDate: '2024-08-05',
+//   gender: 'male',
+//   rapidActingInsulinType: 'qwerty5',
+//   longActingInsulinType: 'qwerty6',
+//   parent1FirstName: 'Megan ',
+//   parent1LastName: 'Fox',
+//   parent1Mobile: '3034958899',
+//   parent2FirstName: 'Cardi',
+//   parent2LastName: 'B.',
+//   parent2Mobile: '1234567890',
+//   preferredLanguage: 'qwerty3',
+//   preferredRoommate: 'qwerty7',
+//   sessions: [ 'session1' ],
+//   specialInstructions: 'no',
+//   primaryCarePhysician: 'donna',
+//   submissionDate: '2024-08-10',
+//   tShirtSize: 'L',
+//   selectedCamps: 'Residential Camp, Robotics Camp, Science Camp, Nature Camp',
+//   insulinType: 'qwerty6',
+//   parent1Email: 'fake@test.com',
+//   document: null,
+//   signature: 'Guy Beals',
+//   newAccountEmail: 'guymorganb@gmail.com',
+//   role: 'camper'
+//   isComplete: true
+
+// make a post route that uses emailjs
+// api/signup/send-email
+router.post('/send-email', async (req, res) => {
+    try {
+        const emailPattern = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}\b/;
+        const { newAccountEmail } = req.body;
+        
+        if (!emailPattern.test(newAccountEmail)) {
+            return res.status(400).json({ error: "Please enter a valid email address." });
+        }
+
+        // Calculate checksum
+        const checksum = crypto.createHash('sha256').update(JSON.stringify(req.body)).digest('hex');
+
+        // Construct validation link
+        const validationLink = `https://yourapp.com/validate?${checksum}`;
+
+        const templateParams = {
+            setup_link: validationLink,
+            name: req.body.legalGuardian,
+            to_email: newAccountEmail,
+            subject: 'Complete Your STJDA Camp Registration - Account Setup Required',
+            from: "STJDA Camp Registration",
+            from_email: "no-reply@stjda.org"
+        };
+
+        console.log('EMAILJS_PUBLIC:', process.env.EMAILJS_PUBLIC);
+
+        const response = await emailjs.send(
+            process.env.EMAILJS_SERVICE, 
+            process.env.EMAILJS_TEMPLATE, 
+            templateParams, 
+            {
+                publicKey: process.env.EMAILJS_PUBLIC,
+                privateKey: process.env.EMAILJS_PRIVATE,
+            }
+        );
+
+        console.log('SUCCESS!', response.status, response.text);
+        return res.status(200).json({ message: "Email sent successfully.", validationLink });
+    } catch (err) {
+        console.error('FAILED...', err);
+        return res.status(500).json({ error: 'Failed to send email', details: err.message });
+    }
+});
+
+
 // 'api/signup/create' endpoint
 // validate their email is good and not a duplicate
 router.post('/create', async (req,res)=>{
@@ -92,9 +128,6 @@ router.post('/create', async (req,res)=>{
     let overTheCounterMedication;
     let prescriptions;
     let medicalNotes;
-
-    console.log("req.body: ",req.body)
-    return res.status(200).json({ message: "Account created successfully" });
 
     // parse through the req.body
     if (!req.body) {
