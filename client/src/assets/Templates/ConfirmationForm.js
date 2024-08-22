@@ -57,6 +57,11 @@ export const formStructure = {
         "label": "Parent 2: Mobile",
         "type": "text"
       },
+      {
+        "name": "consent",
+        "label": "Consent to use images for promotion",
+        "type": "switch",
+      },
     ],
     "Camp Info": [
       {
@@ -114,7 +119,8 @@ export const formStructure = {
       {
         "name": "legalGuardian",
         "label": "Legal Guardian",
-        "type": "text"
+        "type": "text",
+        "helperText": "Format: 'First Name' 'Last Name'"
       },
       {
         "name": "contactPhone",
@@ -124,7 +130,8 @@ export const formStructure = {
       { // physician is uniqley managed by a method in the form component
         "name": "Physician",
         "label": "Primary Care Physician",
-        "type": "text"
+        "type": "text",
+        "helperText": "Format: 'Doctors Name' - dont include the 'Dr.' prefix"
       },
       {
         "name": "officePhoneNumber",
@@ -195,7 +202,8 @@ export const formStructure = {
       {
         "name": "allergies",
         "label": "Allergies",
-        "type": "textarea"
+        "type": "textarea",
+        "helperText": "Format: Comma separated list (Allergy1, Allergy2 ...)"
       },
       {
         "name": "otherDiagnosis",

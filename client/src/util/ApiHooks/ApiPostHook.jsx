@@ -20,10 +20,25 @@ export const useSendToAPI = (url, method = 'POST') => {
         url,
         data,
       });
-      setResponse(result.data);
-      return result; // Return the response data
+      if (result.status >= 200 && result.status < 300) {
+        setResponse(result.data);
+        return result.data; // Return the response data
+      } else {
+        throw new Error(`HTTP error! status: ${result.status}`);
+      }
     } catch (err) {
-      setError(err);
+      // Capture the error message from the server response
+    if (err.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      setError(err.response.data.error || err.response.data.message || 'An error occurred');
+    } else if (err.request) {
+      // The request was made but no response was received
+      setError('No response received from server');
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      setError(err.message || 'An error occurred');
+    }
     } finally {
       const endTime = Date.now();
       const elapsed = endTime - startTime;

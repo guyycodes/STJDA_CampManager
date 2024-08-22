@@ -1,3 +1,35 @@
+/**
+ * DynamicForm Component
+ * 
+ * This component renders a dynamic form based on a predefined form structure.
+ * It uses the template for rendering the field questions of the confirmation form.
+ * 
+ * @component
+ * @param {Object} props
+ * @param {Function} props.handleChange - Function to handle changes in form fields
+ * @param {Function} props.handleSubmit - Function to handle form submission
+ * @param {Object} props.apiData - Initial data for the form
+ * @param {number|null} [props.index=null] - Index of the form (if multiple forms are rendered)
+ * @param {Function} props.setFormData - Function to update the parent component's form data
+ * 
+ * @example
+ * <DynamicForm
+ *   handleChange={handleChange}
+ *   handleSubmit={handleSubmit}
+ *   apiData={initialData}
+ *   setFormData={setFormData}
+ * />
+ * 
+ * Features:
+ * - Renders form fields dynamically based on the formStructure
+ * - Supports various field types: text, textarea, switch, date, select, file
+ * - Handles file uploads
+ * - Performs form validation
+ * - Manages local form state and syncs with parent component
+ * 
+ * The component uses Material-UI components for styling and layout.
+ * It also includes custom logic for formatting and handling specific field types.
+ */
 import React, { useEffect, useState, useRef } from 'react';
 import {
   TextField,
@@ -25,7 +57,6 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
 
   useEffect(() => {
     setFormData(prevData => ({...prevData, ...localFormData}));
-    console.log('localFormData:', localFormData);
   }, [localFormData, setFormData]);
 
   const handleLocalChange = (e, fieldName) => {
@@ -107,8 +138,8 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
         console.error("Invalid date:", localFormData.dateOfBirth);
         value = '';
       }
-    } else if(fieldName === 'Physician') {
-      value = localFormData['primaryCarePhysician'] ?? '';
+    } else if (fieldName === 'primaryCarePhysician') {
+      value = localFormData.primaryCarePhysician ?? '';
     } else if(fieldName === 'selectedCamps') {
       value = localFormData[fieldName] ? localFormData[fieldName].split(', ') : [];
     } else {
@@ -140,8 +171,10 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
       fullWidth: true,
       label: field.label,
       name: field.name,
-      value: String(getFieldValue(field.name, field.type)),
-      onChange: (e) => handleLocalChange(e, field.name),
+      value: String(getFieldValue(field.name === 'Physician' ? 'primaryCarePhysician' : field.name, field.type)),
+      onChange: (e) => handleLocalChange(e, field.name === 'Physician' ? 'primaryCarePhysician' : field.name),
+      // value: String(getFieldValue(field.name, field.type)),
+      // onChange: (e) => handleLocalChange(e, field.name),
       required: field.required,
       error: !!errors[field.name],
       helperText: errors[field.name] || field.helperText
@@ -155,6 +188,7 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
             {...commonProps}
             multiline={field.type === 'textarea'}
             rows={field.type === 'textarea' ? 3 : 1}
+            
           />
         );
       case 'switch':

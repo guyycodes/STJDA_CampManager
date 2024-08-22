@@ -2,19 +2,28 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { CircularProgress, Box } from "@mui/material";
 
+/**
+ * Custom hook for fetching and parsing data from an API
+ * @param {string} url - The URL to fetch data from
+ * @returns {Object} An object containing the fetched data, loading state, error state, and a loading component
+ */
+
 export const useFetch = (url) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    /**
+     * Asynchronously fetches data from the provided URL
+     */
     const fetchData = async () => {
       const startTime = Date.now();
       try {
         const response = await axios.get(url);
         console.log("response.data.data.objects", response.data.data);
         const parsedData = parseAndShapeData(response.data.data);
-        // console.log("response.data.data.objects", response.data);
+        console.log("response.data.data.objects", response.data);
         // const parsedData = parseAndShapeData(response.data);
         setData(parsedData);
       } catch (error) {
@@ -34,6 +43,11 @@ export const useFetch = (url) => {
     fetchData();
   }, [url]);
 
+  /**
+   * Parses the metadata key to extract camp and personal information
+   * @param {string} key - The metadata key to parse
+   * @returns {Object} An object containing parsed information
+   */
   const parseMetadataKey = (key) => {
     const parts = key.split(',').map(item => item.trim());
     const camps = [];
@@ -52,12 +66,18 @@ export const useFetch = (url) => {
     return { camps, firstName, lastName, age, primaryCarePhysician, shirtSize, gender };
   };
 
+    /**
+   * Parses and shapes the API response data
+   * @param {Object} apiResponse - The raw API response
+   * @returns {Array} An array of parsed and shaped data objects
+   * @throws {Error} If the input data is invalid or parsing fails
+   */
   const parseAndShapeData = (apiResponse) => {
     
     if (!apiResponse || !apiResponse.objects || !Array.isArray(apiResponse.objects)) {
       throw new Error("Invalid input data");
     }
-  
+    // loop through each object in the array and parse the content JSON safely
     return apiResponse.objects.map(obj => {
       const { metadata, content } = obj;
 
@@ -78,11 +98,6 @@ export const useFetch = (url) => {
       // Extract camps and other metadata from the Key
       // Parse metadata Key
       const { camps, firstName, lastName, age, primaryCarePhysician, shirtSize, gender } = parseMetadataKey(metadata.Key);
-      
-      // console.log("matadata ", camps, firstName, lastName, age, primaryCarePhysician, shirtSize, gender)
-      // console.log(metadata.StorageClass)
-      // console.log(metadata.LastModified)
-      
 
       // Destructure registrationFormData with default values
       const {
@@ -111,9 +126,45 @@ export const useFetch = (url) => {
         parent2LastName = '',
         parent2Mobile = '',
         specialInstructions = '',
+        mdiInsulinType = '',
+        "medications.ibuprofen": ibuprofenMedication = '',
+        "medications.tylenol": tylenolMedication = '',
+        "medications.benadryl": benadrylMedication = '',
+        contactPhone = '',
+        isMDI = '',
+        pumpModelBrand = '',
+        isCGM = '',
+        cgmModelBrand = '',
+        carbsBreakfast = '',
+        carbsLunch = '',
+        carbsDinner = '',
+        mealtimeRestrictions = '',
+        insulinToCarbRatio = '',
+        correctionFactor = '',
+        target = '',
+        otherDiagnosis = '',
+        otcMedications = '',
+        otherPrescriptions = '',
+        insulinFor15gSnack = '',
+        correctWith15gOrLess = '',
+        hyperglycemiaSymptoms = '',
+        hyperglycemiaTreatment = '',
+        hypoglycemiaSymptoms = '',
+        hypoglycemiaTreatment = '',
+        diabetesManagementStruggles = '',
+        glucoseSensitiveFoods = '',
+        rapidActingInsulinType = '',
+        longActingInsulinType = '',
+        isCompleted = '',
+        role = '',
+        document = '',
+        signature = '',
       } = parsedContent.registrationFormData || {};
   
-      // Safely get age value
+      /**
+       * Safely gets the age value
+       * @returns {string} The age value
+       */
       const getAge = () => {
         if (parsedContent.age != null) {
           return parsedContent.age.toString();
@@ -122,6 +173,14 @@ export const useFetch = (url) => {
           return age;
         }
         return '0';
+      };
+
+      // Handle specific medications
+      const updatedMedications = {
+        ...medications,
+        ...(ibuprofenMedication && { ibuprofen: ibuprofenMedication }),
+        ...(tylenolMedication && { tylenol: tylenolMedication }),
+        ...(benadrylMedication && { benadryl: benadrylMedication }),
       };
 
       return {
@@ -138,11 +197,11 @@ export const useFetch = (url) => {
           guardianName: parsedContent.guardianName || '',
           consent: parsedContent.consent || false,
           registrationFormData: {
-            submissionDate,
+            submissionDate: parsedContent.registrationFormData.submissionDate || submissionDate,
             firstName: contentFirstName || firstName,
             middleName,
             lastName: contentLastName || lastName,
-            sessions,
+            sessions: parsedContent.registrationFormData.sessions || sessions,
             tShirtSize: tShirtSize || shirtSize,
             birthDate,
             gender: contentGender || gender,
@@ -162,13 +221,43 @@ export const useFetch = (url) => {
             specialInstructions,
             preferredRoommate,
             preferredLanguage,
-            medications,
+            medications: updatedMedications,
+            isMDI,
+            pumpModelBrand,
+            isCGM,
+            cgmModelBrand,
+            carbsBreakfast,
+            carbsLunch,
+            carbsDinner,
+            mealtimeRestrictions,
+            insulinToCarbRatio,
+            correctionFactor,
+            target,
+            otherDiagnosis,
+            otcMedications,
+            otherPrescriptions,
+            insulinFor15gSnack,
+            correctWith15gOrLess,
+            hyperglycemiaSymptoms,
+            hyperglycemiaTreatment,
+            hypoglycemiaSymptoms,
+            hypoglycemiaTreatment,
+            diabetesManagementStruggles,
+            glucoseSensitiveFoods,
+            rapidActingInsulinType,
+            longActingInsulinType,
+            isCompleted,
+            role,
+            contactPhone,
+            document,
+            signature,
             // Additional fields needed by ConfirmationForm
             name: `${contentFirstName || firstName} ${contentLastName || lastName}`,
             age: parseInt(getAge(), 10),
             legalGuardian: parsedContent.guardianName || '',
             contactPhone: parent1Mobile,
-            mdiInsulinType: insulinType
+            mdiInsulinType: mdiInsulinType || insulinType,
+
           },
           camps: parsedContent.selectedCamps ? parsedContent.selectedCamps.split(',').map(camp => camp.trim()) : [],
           age: parseInt(getAge(), 10),
@@ -177,6 +266,10 @@ export const useFetch = (url) => {
     });
   };
 
+  /**
+   * React component for displaying a loading spinner
+   * @returns {JSX.Element} A circular progress component
+   */
   const LoadingComponent = () => (
     <Box style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
       <CircularProgress />

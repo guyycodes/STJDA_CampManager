@@ -3,6 +3,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, B
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ReplayIcon from '@mui/icons-material/Replay';
+import { read } from 'xlsx';
 
 export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountCreatedSuccess = {} }) => {
   const [email, setEmail] = useState('');
@@ -48,17 +49,19 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
     setIsProcessing(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (event, retry=false) => {
     setIsProcessing(true);
     setMessages([]);
     setHasError(false);
+    console.log(retry)
     const signatureDataURL = canvasRef.current.toDataURL();
-    onSubmit(email, signatureDataURL, isCompleted);
+    onSubmit(email, retry);
   };
 
-  const handleRetry = () => {
+  const handleRetry = (retry) => {
+    console.log("handleRetry called with retry:", retry);
     setMessages([]);
-    handleSubmit();
+    handleSubmit(null, retry);// Passing null as the event since it's not needed
   };
 
   const startDrawing = (e) => {
@@ -161,7 +164,7 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
         ) : hasError ? (
           <>
             <Button onClick={onClose}>Cancel</Button>
-            <Button onClick={handleRetry} startIcon={<ReplayIcon />}>Retry</Button>
+            <Button onClick={() => {handleRetry(true); console.log("Retry button clicked, setting retry to true"); }} startIcon={<ReplayIcon />}>Retry</Button>
           </>
         ) : (
           <>

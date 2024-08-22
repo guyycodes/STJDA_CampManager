@@ -1,3 +1,56 @@
+/**
+ * ConfirmationForm Component
+ * 
+ * This component renders a complex form for managing diabetes-related information.
+ * It includes filtering capabilities, dynamic form rendering, and API interactions.
+ * 
+ * @component
+ * @param {Object} props
+ * @param {Function} props.activeForm - Function to control the active form display
+ * 
+ * Key Features:
+ * 1. Dynamic filtering of form entries based on various criteria
+ * 2. Rendering of filtered results as expandable accordions
+ * 3. Integration with backend API for data fetching and submission
+ * 4. Handling of file uploads and form state management
+ * 5. Modal for email confirmation and final form submission
+ * 
+ * State Management:
+ * - filteredResults: Stores the filtered form entries
+ * - isApplying: Boolean to track if filters are being applied
+ * - allData: Object to store all form data
+ * - modalOpen: Controls the visibility of the email confirmation modal
+ * - formSaveSuccess: Tracks the success status of form saving
+ * - accountCreatedSuccess: Tracks the success status of account creation
+ * - formData: Stores the current form data being edited
+ * - filters: Stores the current filter settings
+ * - attributeMaps: Maps for efficient filtering of form entries
+ * 
+ * API Interactions:
+ * - Uses custom hooks (useFetch, useSendToAPI) for API operations
+ * - Fetches initial data from the server
+ * - Sends form data to the server
+ * - Handles account creation and form deletion
+ * 
+ * Key Functions:
+ * - handleChange: Manages form input changes
+ * - handleFinalSubmit: Processes the final form submission
+ * - handleSubmit: Manages form submission for individual entries
+ * - handleFilterChange: Handles changes to filter inputs
+ * - applyFilters: Applies selected filters to the data set
+ * - renderFilters: Renders the UI for filter options
+ * 
+ * Rendering:
+ * - Displays a filterable list of form entries
+ * - Each entry can be expanded to show and edit detailed information
+ * - Includes loading and error states
+ * 
+ * @example
+ * <ConfirmationForm activeForm={setActiveForm} />
+ * 
+ * Note: This component relies on several external components and utilities,
+ * such as DynamicForm, EmailModal, and various Material-UI components.
+ */
 import React, { useState, useEffect } from 'react';
 import {
   TextField,
@@ -21,6 +74,8 @@ import { useFetch, useSendToAPI } from '../../../util/ApiHooks';
 import { DynamicForm } from './RenderChildComponents/RenderConfirmationForm';
 import { parseApiData } from './FormHelpers/ParesApi'
 import { EmailModal } from './Modals/ConfirmationModal';
+import CheckCircleIcon from '@mui/icons-material/CheckCircleOutline';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 
 const campOptions = ['Residential Camp', 'Robotics Camp', 'Science Camp', 'Nature Camp'];
@@ -38,34 +93,34 @@ const [modalOpen, setModalOpen] = useState(false);
 const [formSaveSucess ,setFormSaveSucess]=useState({success: null, message: ""})
 const [accountCreatedSucess, setAccountCreatedSucess] = useState({success: null, message: ""})
   // call the backend server first, and it will grab the data from the database for the filtering
-  const { data, loading, error, LoadingComponent } = useFetch('http://localhost:3000/api/forms/DiabetesManagement');
-  const { data: componentData, 
-          loading: componentLoading, 
-          error: componentError 
-        } = {
-          data: data, 
-          loading: LoadingComponent, 
-          error: error,
-        };
+  const { data:data, loading, error:error, LoadingComponent } = useFetch('http://localhost:3000/api/forms/DiabetesManagement');
   // send post request Hook
   const {
     sendRequest: sendFormData,
     loading: sendFormLoading,
     error: sendFormError,
     response: formResponse,
-    LoadComponent: FormLoadingComponent
-  } = useSendToAPI('http://localhost:3000/api/forms/DiabetesManagement/completed-stjda-signup-forms', 'POST');
+    LoadComponent: sendFormLoadingComponent
+  } = useSendToAPI('http://localhost:3000/api/forms/DiabetesManagement/intake', 'POST');
 
   const {
-    sendRequest: createAccount,
-    loading: createAccountLoading,
-    error: createAccountError,
+    sendRequest: deleteForm,
+    loading: deleteAccountLoading,
+    error: deleteAccountError,
+    response: deleteAccountResponse,
+    LoadComponent: deleteAccountLoadingComponent
+  } = useSendToAPI('http://localhost:3000/api/delete/DiabetesManagement/delete', 'DELETE');
+
+
+  const {
+    sendRequest: sendEmailToAccount,
+    loading: sendEmailToAccountLoading,
+    error: sendEmailToAccountError,
     response: accountResponse,
     LoadComponent: AccountLoadingComponent
   } = useSendToAPI('http://localhost:3000/api/signup/send-email', 'POST');
   
-  // State to hold the Trie data structures for each filterable field
-  // Tries are used for efficient prefix-based searching
+
   const [attributeMaps, setAttributeMaps] = useState({
     firstName: new Map(),
     lastName: new Map(),
@@ -140,8 +195,11 @@ const [accountCreatedSucess, setAccountCreatedSucess] = useState({success: null,
     submissionDate: '',//
     tShirtSize: '',//
     selectedCamps: '',
+    originalKey:'',
+    consent: false,//
+    document: null,//
     });
-// Effect hook to initialize Tries when data is loaded
+// Effect hook to initialize Filter Maps when data is loaded
 useEffect(() => {
     if (data) {
       console.log("Data: ", data)
@@ -156,8 +214,9 @@ useEffect(() => {
       };
       console.log("Data change: ");
       data.forEach((entry, index) => {
+        setFormData({...formData, originalKey: entry.metadata})
         const content = JSON.parse(entry.content)[0];
-        
+        console.log("parsed data: ", content)
         const addToMap = (mapName, map, key, index) => {
           if (key === undefined || key === null) {
             // console.log(`Warning: Undefined or null key encountered for ${mapName}`);
@@ -182,7 +241,7 @@ useEffect(() => {
   
         addToMap('firstName', newMaps.firstName, content.registrationFormData.firstName, index);
         addToMap('lastName', newMaps.lastName, content.registrationFormData.lastName, index);
-        addToMap('age', newMaps.age, content.age.toString(), index);
+        addToMap('age', newMaps.age, content.age?.toString(), index);
         addToMap('primaryCarePhysician', newMaps.primaryCarePhysician, content.registrationFormData.primaryCarePhysician, index);
         content.camps.forEach(camp => addToMap('camps', newMaps.camps, camp, index));
         addToMap('tShirtSize', newMaps.tShirtSize, content.registrationFormData.tShirtSize, index);
@@ -214,70 +273,65 @@ useEffect(() => {
     }
   };
 
-  const handleFinalSubmit = async (email, signatureDataURL, isCompleted) => {
+  const handleFinalSubmit = async (email, retry) => {
+    // Extract originalKey from formData
+    const { originalKey, ...restFormData } = formData;
+    if(retry){
+      setFormSaveSucess({ success: null, message: "" })
+      setAccountCreatedSucess({ success: null, message: "" });
+    }
+    // Create dataToSend object without originalKey
     const dataToSend = { 
-      ...formData, 
-      newAccountEmail: email, 
-      signature: signatureDataURL,
-      isCompleted: isCompleted,
-      role: 'camper'
+      ...restFormData,
+      role: 'camper',
     };
-  
+
     try {
       // Save the completed form in object storage
-      const saveFormResponse = await sendFormData(dataToSend);
+      const saveFormResponse = await sendFormData({dataToSend, retry: retry === true ? 1 : 0});
+      console.log("saveFormResponse ", saveFormResponse)
+        if(saveFormResponse.status == 200){
+          try {
+            const deleteSuccess = await deleteForm({originalKeyKey: originalKey});
+            console.log("deleteSuccess ", deleteSuccess)
+            if(deleteSuccess.status === 200){
+              setFormSaveSucess({ success: true, message: "Data successfully saved" });
+            }else{
+              setFormSaveSucess({ success: false, message: deleteAccountError });
+              return
+            }
+            // setup the new account workflow using the new endpoint and PUT method
+            const sendEmailToAccountResponse = await sendEmailToAccount({dataToSend, newAccountEmail: email});
+            console.log('sendEmailToAccountResponse:', sendEmailToAccountResponse);
   
-      if (saveFormResponse.status === 200) {
-        console.log('The data is saved:', saveFormResponse.data);
-        setFormSaveSucess({ success: true, message: "Data successfully saved" });
-  
-        try {
-          // Create the account using the new endpoint and PUT method
-          const createAccountResponse = await createAccount(dataToSend);
-          console.log('After account creation, response:', createAccountResponse);
-
-          if (createAccountResponse.status === 200) {
-            console.log('Setting account created success');
-            setAccountCreatedSucess({ success: true, message: "New account workflow successfully instantiated" });
-            // setModalOpen(false);
-            // Handle successful account creation
-          } else {
-            console.log('Account creation failed');
+            if (sendEmailToAccountResponse.status === 200) {
+              console.log('Setting account created success');
+              setAccountCreatedSucess({ success: true, message: "Email sucessfully sent" });
+              // setModalOpen(false);
+              // Handle successful account creation
+            } else {
+              console.log('Account creation failed');
+              setAccountCreatedSucess({ success: false, message: "Email failed to send, please contact the client directly" });
+            }
+          } catch (error) {
             setAccountCreatedSucess({ success: false, message: "Failed to instantiated account workflow" });
+            console.log(error);
           }
-        } catch (error) {
-          setAccountCreatedSucess({ success: false, message: "Failed to instantiated account workflow" });
-          handleApiError(error, 'Account creation');
+        } else if (saveFormResponse.status == 201) {
+          setFormSaveSucess({ success: true, message: "Data successfully updated" });
+          setAccountCreatedSucess({ success: true, message: "Retry was a success" });
+        } else if (saveFormResponse.status == 409) {
+          setFormSaveSucess({ success: false, message: "The data already exists. If you want to overwrite, please retry" });
         }
-      } else {
+        else {
         console.log('Failed to send data to Minio');
-        setFormSaveSucess({ success: false, message: "Failed to save data" });
+        setFormSaveSucess({ success: false, message: sendFormError });
       }
     } catch (error) {
-      handleApiError(error, 'Data sending');
+      console.log(error);
 
     }
     // setModalOpen(false);  // Always close the modal at the end
-  };
-  
-  const handleApiError = (error, process) => {
-    console.error(`Error in ${process}:`, error);
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.log(error.response.data);
-      console.log(error.response.status);
-      console.log(error.response.headers);
-      errorMessage = error.response.data.message || errorMessage;
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.log(error.request);
-      errorMessage = "No response received from server";
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.log('Error', error.message);
-      errorMessage = error.message;
-    }
   };
   
     // Handle form submission
@@ -339,7 +393,13 @@ const handleApplyFilters = () =>{
     }, 1000);
 }
 
-// Apply filters to the data
+const displayIcon = (boolean) => {
+  return boolean ? 
+    <CheckCircleIcon sx={{ color: 'success.main' }} /> : 
+    <CancelIcon sx={{ color: 'error.main' }} />;
+}
+
+//////////Apply the filters///////////////////////////////////////////////////////////////
 const applyFilters = () => {
     const currentFilters = filters;
     if (data) {
@@ -389,16 +449,14 @@ const applyFilters = () => {
         return {
           ...content,
           key: entry.metadata.Key,
-          formData: parseApiData(content)
+          formData: parseApiData(content, entry.metadata.Key)
         };
       });
-      // console.log("Final results:", results);
       // Sort results by last name and update state  
       const sortedResults = results.sort((a, b) => 
         a.registrationFormData.lastName.localeCompare(b.registrationFormData.lastName)
       );
       console.log("Sorted results:", sortedResults);
-  
       setFilteredResults(sortedResults);
     }
   };
@@ -566,7 +624,7 @@ const applyFilters = () => {
       )}
     </Grid>
   );
-
+///////////////////////////////////////////////////////////////////////////////////////
   if (loading) return LoadingComponent ? <LoadingComponent /> : <Box>Loading...</Box>;
   if (error) return <Box>Error: {error.message}</Box>;
 
@@ -591,7 +649,8 @@ const applyFilters = () => {
           <Accordion key={index}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography>
-                {`${result.registrationFormData.firstName} ${result.registrationFormData.lastName}, Age: ${result.age}`}
+              {`${result.registrationFormData.firstName} ${result.registrationFormData.lastName}, Age: ${result.age} | is complete: `}
+              {displayIcon(result.registrationFormData.isCompleted)}
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -610,8 +669,9 @@ const applyFilters = () => {
           setModalOpen(false);
           setFormSaveSucess({success: null, message: ""})
           setAccountCreatedSucess({success: null, message: ""})
+          activeForm("")
         }}
-        onSubmit={handleFinalSubmit}
+        onSubmit={(email, retry) => handleFinalSubmit(email, retry)}
         saveSuccess={formSaveSucess}
         accountCreatedSuccess={accountCreatedSucess}
       />

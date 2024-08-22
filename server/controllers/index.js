@@ -8,11 +8,14 @@ const newUser = require('./api/newuser_routes')
 const redis = require('./api/cacheWithRedis')
 const admin = require('./api/administrators')
 const formData = require('./api/form_data_routes');
+const deleteData = require('./api/delete_Routes')
 // const logout = require('./api/logout_routes')
 const login = require('./api/login_routes')
 // for ping
 // const ping = require('./api/ping_route')
 // router.use('/ping', ping)
+//for deleting things
+router.use('/delete', deleteData)
 
 // for the dashboard
 router.use('/forms', formData)
@@ -26,8 +29,9 @@ router.use('/signup', newUser)
 // for caching
 router.use('/redis', redis)
 router.use('/admin', admin)
-router.use((req,res) =>{
-    res.send("❗❗ We missed the router ❗❗")
-})
+router.use((req, res) => {
+    console.log(`No route matched for: ${req.method} ${req.path}`);
+    res.status(404).send("❗❗ We missed the router ❗❗")
+  })
 
 module.exports = router;

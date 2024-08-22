@@ -78,7 +78,7 @@ router.post('/send-email', async (req, res) => {
         const { newAccountEmail } = req.body;
         
         if (!emailPattern.test(newAccountEmail)) {
-            return res.status(400).json({ error: "Please enter a valid email address." });
+            return res.status(400).json({ error: "The email address provided was invalid." });
         }
 
         // Calculate checksum
@@ -109,7 +109,7 @@ router.post('/send-email', async (req, res) => {
         );
 
         console.log('SUCCESS!', response.status, response.text);
-        return res.status(200).json({ message: "Email sent successfully.", validationLink });
+        return res.json({ message: "Email sent successfully.", status: 200, emailStatus: response.status});
     } catch (err) {
         console.error('FAILED...', err);
         return res.status(500).json({ error: 'Failed to send email', details: err.message });
