@@ -286,6 +286,12 @@ export const formStructure = {
         "label": "This Form Completed By:",
         "type": "text",
         "required": true
+      },
+      {
+        "name": "originalKey",
+        "label": "Integrity Identifier",
+        "type": "text",
+        "multiple": false
       }
       
     ]

@@ -13,64 +13,10 @@ config({ path: './.env' });
 // JWT setup
 const jwtSecret = 'mysecretsshhhhh';
 const jwtExpiration = '2h';
-//   name: 'Jack Black',
-//   age: 38,
-//   dateOfBirth: '1986-06-24',
-//   isMDI: true,
-//   pumpModelBrand: 'pupm123',
-//   isCGM: true,
-//   cgmModelBrand: 'cgm 456',
-//   legalGuardian: 'test',
-//   contactPhone: '3034958899',
-//   carbsBreakfast: '56',
-//   carbsLunch: '78',
-//   carbsDinner: '90',
-//   mealtimeRestrictions: 'bread',
-//   insulinToCarbRatio: '1:5',
-//   correctionFactor: '34',
-//   target: '99',
-//   mdiInsulinType: 'qwerty6',
-//   allergies: 'yes',
-//   otherDiagnosis: 'Hashimoto',
-//   otcMedications: 'Advil',
-//   otherPrescriptions: 'Penicilin',
-//   insulinFor15gSnack: true,
-//   correctWith15gOrLess: true,
-//   hyperglycemiaSymptoms: 'Hyperness',
-//   hyperglycemiaTreatment: 'sleep',
-//   hypoglycemiaSymptoms: 'tiredness',
-//   hypoglycemiaTreatment: 'excercise',
-//   diabetesManagementStruggles: 'confidence',
-//   glucoseSensitiveFoods: 'bread',
-//   diabetesPhysician: 'seth',
-//   officePhoneNumber: '1234567890',
-//   diagnosisDate: '2024-08-05',
-//   gender: 'male',
-//   rapidActingInsulinType: 'qwerty5',
-//   longActingInsulinType: 'qwerty6',
-//   parent1FirstName: 'Megan ',
-//   parent1LastName: 'Fox',
-//   parent1Mobile: '3034958899',
-//   parent2FirstName: 'Cardi',
-//   parent2LastName: 'B.',
-//   parent2Mobile: '1234567890',
-//   preferredLanguage: 'qwerty3',
-//   preferredRoommate: 'qwerty7',
-//   sessions: [ 'session1' ],
-//   specialInstructions: 'no',
-//   primaryCarePhysician: 'donna',
-//   submissionDate: '2024-08-10',
-//   tShirtSize: 'L',
-//   selectedCamps: 'Residential Camp, Robotics Camp, Science Camp, Nature Camp',
-//   insulinType: 'qwerty6',
-//   parent1Email: 'fake@test.com',
-//   document: null,
-//   signature: 'Guy Beals',
-//   newAccountEmail: 'guymorganb@gmail.com',
-//   role: 'camper'
-//   isComplete: true
 
-// make a post route that uses emailjs
+const jwtEmailSecret = 'mysecretsshhhhh';
+const jwtEmailExpiration = '14d';
+
 // api/signup/send-email
 router.post('/send-email', async (req, res) => {
     try {
@@ -84,8 +30,11 @@ router.post('/send-email', async (req, res) => {
         // Calculate checksum
         const checksum = crypto.createHash('sha256').update(JSON.stringify(req.body)).digest('hex');
 
+         // Generate JWT
+         const token = jwt.sign({ checksum }, jwtEmailSecret, { expiresIn: jwtEmailExpiration });
+
         // Construct validation link
-        const validationLink = `https://yourapp.com/validate?${checksum}`;
+        const validationLink = `https://yourapp.com/validate?${token}`;
 
         const templateParams = {
             setup_link: validationLink,

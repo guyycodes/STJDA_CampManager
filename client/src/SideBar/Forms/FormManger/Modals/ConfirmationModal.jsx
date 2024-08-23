@@ -54,7 +54,7 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
     setMessages([]);
     setHasError(false);
     console.log(retry)
-    const signatureDataURL = canvasRef.current.toDataURL();
+    // const signatureDataURL = canvasRef.current.toDataURL();
     onSubmit(email, retry);
   };
 
@@ -108,14 +108,14 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Confirm the Client's Email & Sign - Notify Client to Check their email to access their account</DialogTitle>
+      <DialogTitle>Confirm the Client's Email </DialogTitle>
       <DialogContent>
         {renderMessages()}
         <TextField
           autoFocus
           margin="dense"
           id="email"
-          label="Email Address For New Users Account"
+          label="Email Address"
           type="email"
           fullWidth
           value={email}

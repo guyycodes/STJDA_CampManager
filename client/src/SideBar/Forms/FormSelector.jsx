@@ -36,7 +36,7 @@ export const StaffFormSelector = (props) => (
     options={{
       title: "Staff Forms",
       forms: [
-        { value: "unknown", label: "N/A" }
+        { value: "Background Check", label: "Background Check" }
       ]
     }}
   />
@@ -50,7 +50,7 @@ export const CamperFormSelector = (props) => (
       title: "Camp Attendants",
       forms: [
         { value: "Confirm Reservation", label: "Confirm Reservation" },
-        { value: "Unknown", label: "N/A" }
+        { value: "Med-Check-in", label: "Med-Check-in" }
       ]
     }}
   />

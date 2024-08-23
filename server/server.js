@@ -1,5 +1,4 @@
 const express = require('express')
-
 const cookieParser = require('cookie-parser');
 const sequelize = require('./config/connection.js');    
 const path = require('path')
@@ -7,8 +6,7 @@ const cors = require('cors')
 const { config } = require('dotenv');
 const controllers = require('./controllers/index.js')
 const models = require('./models/index.js')
-const crypto = require('crypto');
-const emailjs = require('@emailjs/nodejs');
+
 const Redis = require('ioredis');
 const redisClient = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
@@ -28,9 +26,13 @@ app.use(cors({
   origin: 'http://localhost:5173',
   credentials: true, // Allow cookies and other credentials to be sent with requests
 }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Body parser configuration
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Static file serving
 app.use(express.static(path.join(__dirname, 'public'))); 
-app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api", controllers);

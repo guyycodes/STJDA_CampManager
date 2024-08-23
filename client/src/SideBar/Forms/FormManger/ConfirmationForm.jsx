@@ -76,7 +76,7 @@ import { parseApiData } from './FormHelpers/ParesApi'
 import { EmailModal } from './Modals/ConfirmationModal';
 import CheckCircleIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelIcon from '@mui/icons-material/Cancel';
-
+import { isSHA256 } from '../../../util/DataIntegrity'
 
 const campOptions = ['Residential Camp', 'Robotics Camp', 'Science Camp', 'Nature Camp'];
 const genderOptions = ['Male', 'Female', 'Other'];
@@ -89,6 +89,7 @@ export const ConfirmationForm = ({ activeForm }) => {
 const [filteredResults, setFilteredResults] = useState([]);
 const [isApplying, setIsApplying] = useState(false);
 const [allData, setAllData] = useState({});
+const [isUpdate, setIsUpdate] =useState();
 const [modalOpen, setModalOpen] = useState(false);
 const [formSaveSucess ,setFormSaveSucess]=useState({success: null, message: ""})
 const [accountCreatedSucess, setAccountCreatedSucess] = useState({success: null, message: ""})
@@ -272,10 +273,41 @@ useEffect(() => {
       }));
     }
   };
+// Handle form submission
+const handleSubmit = async (event, resultIndex = null) => {
+  event.preventDefault();
 
+  if (resultIndex !== null) {
+    const updatedResult = filteredResults[resultIndex];
+    console.log('updatedResult: ', updatedResult);
+    // const formData = filteredResults[resultIndex].formData;
+    setAllData(prevData => ({
+      ...prevData,
+      [updatedResult.key]: {
+          apiData: updatedResult.apiData, 
+          formData: updatedResult.formData
+      }
+    }))
+  } else {
+      try {
+        if(!modalOpen){
+          setModalOpen(true);
+        }else{
+          setModalOpen(false)
+        }
+      } catch (err) {
+        console.error('Error sending data:', err);
+      }
+    }
+  };
+
+////////////final submit and retry logic///////
   const handleFinalSubmit = async (email, retry) => {
     // Extract originalKey from formData
     const { originalKey, ...restFormData } = formData;
+    if(isSHA256(originalKey)){
+      setIsUpdate(true)
+    }
     if(retry){
       setFormSaveSucess({ success: null, message: "" })
       setAccountCreatedSucess({ success: null, message: "" });
@@ -285,38 +317,40 @@ useEffect(() => {
       ...restFormData,
       role: 'camper',
     };
-
+  
+ 
     try {
       // Save the completed form in object storage
-      const saveFormResponse = await sendFormData({dataToSend, retry: retry === true ? 1 : 0});
-      console.log("saveFormResponse ", saveFormResponse)
-        if(saveFormResponse.status == 200){
-          try {
-            const deleteSuccess = await deleteForm({originalKeyKey: originalKey});
-            console.log("deleteSuccess ", deleteSuccess)
-            if(deleteSuccess.status === 200){
-              setFormSaveSucess({ success: true, message: "Data successfully saved" });
-            }else{
-              setFormSaveSucess({ success: false, message: deleteAccountError });
-              return
+      const saveFormResponse = await sendFormData({dataToSend, retry: retry === true ? 1 : 0, originalKey: originalKey},);
+      
+        if(saveFormResponse.status == 200){ // handling status code 200, 201, 409
+            try {
+              const deleteSuccess = await deleteForm({originalKeyKey: originalKey});
+              
+              if(deleteSuccess.status === 200){
+                setFormSaveSucess({ success: true, message: "Data successfully saved" });
+              }else{
+                setFormSaveSucess({ success: false, message: deleteAccountError });
+                return
+              }
+              
+              if (!isSHA256(originalKey)) { // if the original key is not SHA256, we're creating a new account
+                const sendEmailToAccountResponse = await sendEmailToAccount({dataToSend, newAccountEmail: email});
+                if (sendEmailToAccountResponse?.status === 200) {
+                  console.log('Setting account created success');
+                  setAccountCreatedSucess({ success: true, message: "Email successfully sent" });
+                } else {
+                  console.log('Account creation failed');
+                  setAccountCreatedSucess({ success: false, message: "Email failed to send, please contact the client directly" });
+                }
+              } else {
+                // This is an account update
+                setAccountCreatedSucess({ success: true, message: "Account Update Successful" });
+              }
+            } catch (error) {
+              setAccountCreatedSucess({ success: false, message: "Failed to instantiated account workflow" });
+              console.log(error);
             }
-            // setup the new account workflow using the new endpoint and PUT method
-            const sendEmailToAccountResponse = await sendEmailToAccount({dataToSend, newAccountEmail: email});
-            console.log('sendEmailToAccountResponse:', sendEmailToAccountResponse);
-  
-            if (sendEmailToAccountResponse.status === 200) {
-              console.log('Setting account created success');
-              setAccountCreatedSucess({ success: true, message: "Email sucessfully sent" });
-              // setModalOpen(false);
-              // Handle successful account creation
-            } else {
-              console.log('Account creation failed');
-              setAccountCreatedSucess({ success: false, message: "Email failed to send, please contact the client directly" });
-            }
-          } catch (error) {
-            setAccountCreatedSucess({ success: false, message: "Failed to instantiated account workflow" });
-            console.log(error);
-          }
         } else if (saveFormResponse.status == 201) {
           setFormSaveSucess({ success: true, message: "Data successfully updated" });
           setAccountCreatedSucess({ success: true, message: "Retry was a success" });
@@ -331,36 +365,8 @@ useEffect(() => {
       console.log(error);
 
     }
-    // setModalOpen(false);  // Always close the modal at the end
   };
-  
-    // Handle form submission
-  const handleSubmit = async (event, resultIndex = null) => {
-    event.preventDefault();
-
-    if (resultIndex !== null) {
-      const updatedResult = filteredResults[resultIndex];
-      console.log('updatedResult: ', updatedResult);
-    //   const formData = filteredResults[resultIndex].formData;
-      setAllData(prevData => ({
-        ...prevData,
-        [updatedResult.key]: {
-            apiData: updatedResult.apiData, 
-            formData: updatedResult.formData
-        }
-      }))
-    } else {
-        try {
-          if(!modalOpen){
-            setModalOpen(true);
-          }else{
-            setModalOpen(false)
-          }
-        } catch (err) {
-          console.error('Error sending data:', err);
-        }
-      }
-    };
+//////////////////////////////////////////////////////////////////////
 
  // Handle changes to filter inputs
  const handleFilterChange = (event) => {

@@ -28,7 +28,7 @@ import { UPDATE_PERSON, UPDATE_CAMPER_CARE_DATA } from "../util/gpl/mutations";
 import { useMutation } from "@apollo/client";
 import { EditProfileModal } from "./Modals";
 import { handleApolloError } from "../util/gpl/handleApolloError";
-import { ConfirmationForm } from './Forms/FormManger'
+import { ConfirmationForm, MedCheckInForm } from './Forms/FormManger'
 
 const StyledCard = styled(Paper)(({ theme }) => ({
   height: '100%',
@@ -304,8 +304,8 @@ const formPicker = () => {
     case 'Confirm Reservation':
       setActiveForm('ConfirmReservation');
       break;
-    case 'Close-out':
-      setActiveForm('CloseOut');
+    case 'Med-Check-in':
+      setActiveForm('Med-Check-in');
       break;
     default:
       setActiveForm(null);
@@ -533,7 +533,8 @@ const parseLocalStorage = (value) => {
 
               {userProfileStore.selectedSection === "Contact" ? (
                 <ContactContainer />
-              ) : (userProfileStore.selectedSection === "Forms" && activeForm === 'ConfirmReservation') ? <ConfirmationForm activeForm={setActiveForm}/> : (
+              ) : (userProfileStore.selectedSection === "Forms" && activeForm === 'ConfirmReservation') ? <ConfirmationForm activeForm={setActiveForm}/> 
+                : (activeForm === 'Med-Check-in') ? <MedCheckInForm activeForm={setActiveForm}/> : (
                 <Grid container spacing={4}>
                   {/* Left Column */}
                   <Grid item xs={12} md={4}>

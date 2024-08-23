@@ -44,19 +44,38 @@ import {
   FormControl,
   Chip,
   FormHelperText,
-  IconButton
+  IconButton,
+  Typography,
+  Tooltip
 } from '@mui/material';
 import { UploadFile, Clear } from '@mui/icons-material';
-import { uploadFileHelper } from '../FormHelpers/UploadToServer';
+import { UploadFileHelper } from '../FormHelpers/UploadImageToServer';
 import { formStructure } from '../../../../assets/Templates/ConfirmationForm';
 
 export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, setFormData}) => {
   const [localFormData, setLocalFormData] = useState(apiData);
   const [errors, setErrors] = useState({});
+  const [isFormChanged, setIsFormChanged] = useState(false);
+  const [fileData, setFileData] = useState({key: null, url: null});
   const fileInputRef = useRef({});
-
+  const { // destructue the upload file helper hook, from UploadImageToServer.js
+    processAndUploadFile, 
+    uploadLoading, 
+    uploadError, 
+    uploadResponse, 
+    uploadLoadingComponent 
+  } = UploadFileHelper('', setLocalFormData); // We'll set the fieldName later
+  // Store file metadata in localFormData
   useEffect(() => {
     setFormData(prevData => ({...prevData, ...localFormData}));
+    console.log("local form data",localFormData)
+    // sets the UI to show the link and the key
+    if (localFormData.document) {
+      setFileData({
+        key: localFormData.document.key || null,
+        url: localFormData.document.url || null
+      });
+    }
   }, [localFormData, setFormData]);
 
   const handleLocalChange = (e, fieldName) => {
@@ -79,44 +98,58 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
       [fieldName]: ''
     }));
 
+    setIsFormChanged(true);
+
     handleChange({ target: { name: fieldName, value: newValue } }, index);
   };
 
-  const handleFileChange = (e, fieldName) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Store file metadata in localFormData
-      const fileData = {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        lastModified: file.lastModified
-      };
-
-      setLocalFormData(prevData => ({
-        ...prevData,
-        [fieldName]: fileData
-      }));
-
-      // If you need to send the file to the server immediately:
-      // uploadFile(file, fieldName);
-
+  const handleFileChange = async (e, fieldName) => {
+    const files = Array.from(e.target.files);
+  
+    if (files.length > 0) {
+      const uploadedFiles = await Promise.all(
+        files.map(async (file) => {
+          const uploadedFileData = await processAndUploadFile(file, fieldName);
+          return {
+            name: file.name,
+            key: uploadedFileData.key,
+            url: uploadedFileData.url
+          };
+        })
+      );
+  
+    const newValue = files.length === 1 ? uploadedFiles[0] : uploadedFiles;
+  
+    if (newValue) {
+      
+      // Use the processAndUploadFile function from the hook and upload the file directly right now
+      await processAndUploadFile(newValue, fieldName);
+  
+      setIsFormChanged(true);
+      
       // Notify parent component
-      handleChange({ target: { name: fieldName, value: fileData } }, index);
-    }
+      handleChange({ target: { name: fieldName, value: newValue } }, index);
+    }}
   };
 
   const handleFileClear = (fieldName) => {
-    // Clear the file input
-    if (fileInputRef.current[fieldName]) {
-      fileInputRef.current[fieldName].value = '';
-    }
+    setLocalFormData(prevData => {
+      const currentValue = prevData[fieldName];
+      let newValue;
+  
+      if (Array.isArray(currentValue)) {
+        // Multiple files
+        newValue = currentValue.filter((_, index) => index !== fileIndex);
+        if (newValue.length === 0) newValue = null;
+      } else {
+        // Single file
+        newValue = null;
+      }
+  
+      return { ...prevData, [fieldName]: newValue };
+    });
 
-    // Clear the file data from localFormData
-    setLocalFormData(prevData => ({
-      ...prevData,
-      [fieldName]: null
-    }));
+    setIsFormChanged(true);
 
     // Notify parent component
     handleChange({ target: { name: fieldName, value: null } }, index);
@@ -142,7 +175,15 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
       value = localFormData.primaryCarePhysician ?? '';
     } else if(fieldName === 'selectedCamps') {
       value = localFormData[fieldName] ? localFormData[fieldName].split(', ') : [];
-    } else {
+    }else if (fieldType === 'file') {
+      if (Array.isArray(localFormData[fieldName])) {
+        value = localFormData[fieldName].map(file => file.name).join(', ');
+      } else if (localFormData[fieldName]) {
+        value = localFormData[fieldName].name;
+      } else {
+        value = '';
+      } 
+    }else {
       value = localFormData[fieldName] ?? '';
     }
 
@@ -173,12 +214,38 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
       name: field.name,
       value: String(getFieldValue(field.name === 'Physician' ? 'primaryCarePhysician' : field.name, field.type)),
       onChange: (e) => handleLocalChange(e, field.name === 'Physician' ? 'primaryCarePhysician' : field.name),
-      // value: String(getFieldValue(field.name, field.type)),
-      // onChange: (e) => handleLocalChange(e, field.name),
       required: field.required,
       error: !!errors[field.name],
       helperText: errors[field.name] || field.helperText
     };
+
+    // Special case for originalKey
+    if (field.name === 'originalKey') {
+      return (
+        <TextField
+          {...commonProps}
+          InputProps={{
+            readOnly: true,
+            disableUnderline: true,
+            style: {
+              fontSize: '0.70rem',
+              padding: '2px 4px',
+              backgroundColor: 'transparent',
+            },
+          }}
+          variant="standard"
+          margin="dense"
+          sx={{
+            '& .MuiInputBase-root': {
+              height: '24px',
+            },
+            '& .MuiFormLabel-root': {
+              fontSize: '0.8rem',
+            },
+          }}
+        />
+      );
+    }
 
     switch (field.type) {
       case 'text':
@@ -275,11 +342,15 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
             </FormControl>
           );
         }
-        case 'file':
+// this should handle multiple uploads but, 
+// multiple are not being set when the initial object form data is being pulled in from the database in the Get-hook
+// unless theres a reason im not doing multiple uploads right now
+        case 'file':  
           return (
-            <Box>
-            <input
+          <Box>
+            <input  
               type="file"
+              multiple={field.multiple} // change this in the template to allow multiple
               ref={el => fileInputRef.current[field.name] = el}
               style={{ display: 'none' }}
               onChange={(e) => handleFileChange(e, field.name)}
@@ -293,14 +364,67 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
               {field.label}
             </Button>
             {localFormData[field.name] && (
-              <Box mt={1} display="flex" alignItems="center">
-                <Box flexGrow={1}>File selected: {localFormData[field.name].name}</Box>
-                <IconButton onClick={() => handleFileClear(field.name)} size="small">
-                  <Clear />
-                </IconButton>
+              <Box mt={1}>
+                {Array.isArray(localFormData[field.name]) ? (
+                  localFormData[field.name].map((file, index) => (
+                    <Box key={index} mt={1} display="flex" flexDirection="column">
+                      <IconButton onClick={() => handleFileClear(field.name, index)} size="small" style={{ color: 'red' }}>
+                        <Clear />
+                      </IconButton>
+                      <Box flexGrow={1}>
+                        <Typography variant="body2" style={{ fontSize: '0.75rem' }}>
+                          File Type: {file.key.split('.')[1] || 'Unknown file type'}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" style={{ fontSize: '0.60rem' }}>
+                        Unique Identifier: {file.key.split('.')[0]}
+                      </Typography>
+                      <Box>
+                        <Button variant="contained" style={{ backgroundColor: 'transparent' }}>
+                          <Typography variant="body2" style={{ fontSize: '0.75rem' }}>
+                            <a href={file.url} target="_blank" rel="noopener noreferrer">
+                              View uploaded file
+                            </a>
+                          </Typography>
+                        </Button>
+                      </Box>
+                    </Box>
+                  ))
+                ) : (
+                  // Single file
+                  <Box display="flex" flexDirection="column" mb={1}>
+                    <IconButton onClick={() => handleFileClear(field.name)} size="small" style={{ color: 'red' }}>
+                      <Clear />
+                    </IconButton>
+                    <Box flexGrow={1}>
+                      <Typography variant="body2" style={{ fontSize: '0.75rem' }}>
+                        File Type: {localFormData[field.name].key.split('.')[1] || 'Unknown file type'}
+                      </Typography>
+                    </Box>
+                    {localFormData[field.name].key && (
+                      <Typography variant="body2" style={{ fontSize: '0.60rem' }}>
+                        Unique Identifier: {localFormData[field.name].key.split('.')[0]}
+                      </Typography>
+                    )}
+                    {localFormData[field.name].url && (
+                      <Box>
+                        <Button variant="contained" style={{ backgroundColor: 'transparent' }}>
+                          <Typography variant="body2" style={{ fontSize: '0.75rem' }}>
+                            <a href={localFormData[field.name].url} target="_blank" rel="noopener noreferrer">
+                              View uploaded file
+                            </a>
+                          </Typography>
+                        </Button>
+                      </Box>
+                    )}
+                  </Box>
+                )}
               </Box>
             )}
             {errors[field.name] && <FormHelperText error>{errors[field.name]}</FormHelperText>}
+            {uploadLoading && uploadLoadingComponent()}
+            {uploadError && <p>Error: {uploadError}</p>}
+            {uploadResponse && <p>Upload successful!</p>}
           </Box>
           );
       default:
@@ -329,7 +453,13 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
           </React.Fragment>
         ))}
       </Grid>
-      <Button type="submit" variant="contained" color="primary" sx={{ mt: 3 }}>
+      <Button 
+      type="submit" 
+      variant="contained" 
+      color="primary" 
+      sx={{ mt: 3 }}
+      disabled={!isFormChanged}      
+      >
         Submit
       </Button>
     </form>

@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 const { config } = require('dotenv');
-
+const multer = require('multer');
 config({ path: './.env' });
 
 /**
@@ -36,7 +36,7 @@ const computeChecksum = (originalData) => {
 }
 
 /**
- * POST /DiabetesManagement/intake
+ * POST api/forms/DiabetesManagement/intake
  * 
  * Creates a new entry in the 'stjda-signup-forms' bucket, using a computed checksum as the key.
  */
@@ -47,7 +47,7 @@ router.post('/DiabetesManagement/intake', async (req, res) => {
       }
       // save back into the same bucket
       const bucket = 'stjda-signup-forms';
-      const { dataToSend, retry } = req.body;
+      const {originalKey, dataToSend, retry } = req.body;
       let userData = dataToSend;
       let data;
 
@@ -180,7 +180,7 @@ router.post('/DiabetesManagement/intake', async (req, res) => {
   });
 
 /**
- * GET /DiabetesManagement
+ * GET api/forms/DiabetesManagement
  * 
  * Retrieves all entries from the 'stjda-signup-forms' bucket.
  */
@@ -210,48 +210,77 @@ router.get('/DiabetesManagement', async (req, res) => {
 });
 
 /**
- * POST /DiabetesManagement/:bucket
+ * POST api/forms/DiabetesManagement/uploadDocument
  * 
  * Updates an entry in the specified bucket, using a computed checksum as the key.
  */
-router.post('/DiabetesManagement/:bucket', async (req, res) => {
+router.post('/DiabetesManagement/uploadDocument', async (req, res) => {
+  // File upload configuration
+  const upload = multer({
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB limit
+    storage: multer.memoryStorage() // Store files in memory
+  }).single('file');
+
+  upload(req, res, async function(err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: err.message });
+    } else if (err) {
+      return res.status(500).json({ error: 'An unknown error occurred when uploading.' });
+    }
+
     try {
       if (!req.body) {
         return res.status(400).json({ error: 'Request body is missing' });
       }
-  
-      const { bucket } = req.params;
-      const userData = req.body;
-      
-      const { originalKey: { Key: originalKeyKey }, ...restOfUserData } = userData;
 
-      // Compute checksum
+      const bucket = 'form-uploads';
+      const userData = req.body;
+
+      console.log("userData: ", JSON.stringify(userData, null, 2));
+
+      // Extract base64Data from userData
+      const { base64Data, ...restOfUserData } = userData;
+      console.log("rest of user data ",restOfUserData)
+    
+      if (!base64Data) {
+        return res.status(400).json({ error: 'base64Data is missing from the request body' });
+      }
+
+      // Compute checksum from base64Data
       const checksum = crypto
         .createHash('sha256')
-        .update(JSON.stringify(restOfUserData))
+        .update(base64Data)
         .digest('hex');
-  
+
+      const proxyUrl = `http://34.135.9.49:3000/api/minioP/upload/${bucket}`;
+
       // Use checksum as the key
-      const updateResult = await fetch(`http://34.135.9.49:3000/api/minioP/${bucket}`, {
+      const updateResult = await fetch(proxyUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // 'Authorization': `Bearer ${req.cookies.jwt}`
         },
         body: JSON.stringify({
           key: checksum,
-          data: userData
+          data: base64Data,
+          metadata: {
+            ...restOfUserData,
+            fileType: restOfUserData.fileType || 'application/octet-stream' // Ensure fileType is sent
+          }
         })
       });
-  
-      if (updateResult.status !== 200) {
-        throw new Error(`HTTP error! status: ${updateResult.status}`);
-      }
-  
-      const resultData = await updateResult.json();
-      
-      // alter the original data entry we changed, youll need to pass along the key and access that bucket
 
+      console.log("updateResult status:", updateResult.status);
+      console.log("updateResult headers:", JSON.stringify(Object.fromEntries(updateResult.headers.entries()), null, 2));
+
+      const responseBody = await updateResult.text();
+      console.log("Response body:", responseBody);
+
+      if (!updateResult.ok) {
+        throw new Error(`HTTP error! status: ${updateResult.status}, body: ${responseBody}`);
+      }
+
+      const resultData = JSON.parse(responseBody);
 
       res.status(200).json({ 
         message: "Data successfully sent to MinIO",
@@ -263,8 +292,13 @@ router.post('/DiabetesManagement/:bucket', async (req, res) => {
 
     } catch (error) {
       console.error("Error sending data to MinIO:", error);
-      res.status(500).json({ error: "Error sending data to MinIO" });
+      res.status(500).json({ 
+        error: "Error sending data to MinIO", 
+        details: error.message,
+        stack: error.stack
+      });
     }
   });
+});
 
 module.exports = router;
