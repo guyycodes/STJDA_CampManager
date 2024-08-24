@@ -2,11 +2,22 @@ import React, { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 import { CircularProgress } from "@mui/material";
 
+/**
+ * Custom hook for sending data to an API
+ * @param {string} url - The URL to send the request to
+ * @param {string} [method='POST'] - The HTTP method to use for the request
+ * @returns {Object} An object containing the sendRequest function, loading state, error state, response data, and a loading component
+ */
 export const useSendToAPI = (url, method = 'POST') => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [response, setResponse] = useState(null);
 
+    /**
+   * Sends a request to the API
+   * @param {Object} data - The data to send to the API
+   * @returns {Promise<Object|null>} The response data if successful, null otherwise
+   */
   const sendRequest = useCallback(async (data) => {
     setLoading(true);
     setError(null);
@@ -50,7 +61,10 @@ export const useSendToAPI = (url, method = 'POST') => {
     }
   }, [url, method]);
 
-
+  /**
+   * React component for displaying a loading spinner
+   * @returns {JSX.Element} A circular progress component
+   */
   const LoadComponent = () => (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
       <CircularProgress />

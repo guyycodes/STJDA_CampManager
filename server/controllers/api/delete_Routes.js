@@ -6,12 +6,13 @@ config({ path: './.env' });
 
 // Middleware for initial data processing and storage
 // will create a new entry in a bucket and set a checksum as the key
-router.delete('/DiabetesManagement/delete', async (req, res) => {
+router.delete('/DiabetesManagement/delete/:bucket', async (req, res) => {
     try {
       if (!req.body) {
         return res.status(400).json({ error: 'Request body is missing' });
       }
-      const bucket = 'stjda-signup-forms';
+      const { bucket } = req.params;
+      // const bucket = 'stjda-signup-forms';
       const {originalKeyKey} = req.body;
       console.log("originalKeyKey: ",originalKeyKey)
   

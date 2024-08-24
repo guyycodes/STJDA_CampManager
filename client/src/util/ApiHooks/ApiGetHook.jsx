@@ -3,11 +3,11 @@ import axios from "axios";
 import { CircularProgress, Box } from "@mui/material";
 
 /**
- * Custom hook for fetching and parsing data from an API
+ * Custom hook for fetching and parsing data from an API, specifically for the intake process for STJDA intake form, 
+ * It shapes the data incoming from another microservice, and fits it for the specific use case of the intake form.
  * @param {string} url - The URL to fetch data from
  * @returns {Object} An object containing the fetched data, loading state, error state, and a loading component
  */
-
 export const useFetch = (url) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -99,7 +99,10 @@ export const useFetch = (url) => {
       // Parse metadata Key
       const { camps, firstName, lastName, age, primaryCarePhysician, shirtSize, gender } = parseMetadataKey(metadata.Key);
 
-      // Destructure registrationFormData with default values
+         /**
+       * Destructures registrationFormData with default values
+       * @type {Object}
+       */
       const {
         allergies ='',
         birthDate ='',
@@ -175,7 +178,10 @@ export const useFetch = (url) => {
         return '0';
       };
 
-      // Handle specific medications
+        /**
+       * Handles specific medications
+       * @type {Object}
+       */
       const updatedMedications = {
         ...medications,
         ...(ibuprofenMedication && { ibuprofen: ibuprofenMedication }),
@@ -255,7 +261,7 @@ export const useFetch = (url) => {
             name: `${contentFirstName || firstName} ${contentLastName || lastName}`,
             age: parseInt(getAge(), 10),
             legalGuardian: parsedContent.guardianName || '',
-            contactPhone: parent1Mobile,
+            contactPhone: contactPhone,
             mdiInsulinType: mdiInsulinType || insulinType,
 
           },
@@ -266,7 +272,7 @@ export const useFetch = (url) => {
     });
   };
 
-  /**
+   /**
    * React component for displaying a loading spinner
    * @returns {JSX.Element} A circular progress component
    */

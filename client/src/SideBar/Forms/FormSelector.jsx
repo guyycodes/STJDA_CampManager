@@ -47,7 +47,7 @@ export const CamperFormSelector = (props) => (
     {...props}
     type="camper"
     options={{
-      title: "Camp Attendants",
+      title: "Intake Forms",
       forms: [
         { value: "Confirm Reservation", label: "Confirm Reservation" },
         { value: "Med-Check-in", label: "Med-Check-in" }

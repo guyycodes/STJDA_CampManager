@@ -1,10 +1,21 @@
-// Function to parse API data and put it into its respective feilds to fill out the form
+/**
+ * Parses API data and formats it for form filling.
+ * 
+ * @param {Object|Array} apiData - The data received from the API. Can be an object or an array containing a single object.
+ * @param {string} [key=''] - An optional key associated with the data.
+ * @returns {Object} An object containing parsed and formatted data for form filling.
+ */
 export const parseApiData = (apiData, key = '') => {
   console.log(apiData)
     // setAllData(apiData);
     const content = Array.isArray(apiData) ? apiData[0] : apiData;
 
-    // Function to calculate age from birthdate
+      /**
+   * Calculates age based on birthdate.
+   * 
+   * @param {string} birthDate - The birthdate in a format parseable by the Date constructor.
+   * @returns {number} The calculated age.
+   */
     const calculateAge = (birthDate) => {
         const today = new Date();
         const birth = new Date(birthDate);
@@ -28,7 +39,7 @@ export const parseApiData = (apiData, key = '') => {
       isCGM: content.registrationFormData.isCGM || false,
       cgmModelBrand: content.registrationFormData.cgmModelBrand || '',
       legalGuardian: content.guardianName || '',
-      contactPhone: content.registrationFormData.parent1Mobile || '',
+      contactPhone: content.registrationFormData.contactPhone || '',
       carbsBreakfast: content.registrationFormData.carbsBreakfast || '',
       carbsLunch: content.registrationFormData.carbsLunch || '',
       carbsDinner: content.registrationFormData.carbsDinner || '',

@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Box, Typography, CircularProgress, Checkbox, FormControlLabel } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ReplayIcon from '@mui/icons-material/Replay';
-import { read } from 'xlsx';
 
 /**
  * @typedef {Object} SuccessObject
@@ -12,32 +11,43 @@ import { read } from 'xlsx';
  */
 
 /**
- * EmailModal Component
+ * MedicalCheckInModal Component
  * 
- * @param {Object} props - The component props
+ * This component renders a modal dialog for confirming a medical check-in.
+ * It handles email input, signature capture, form submission, and displays success/error messages.
+ * 
+ * @component
+ * @param {Object} props
  * @param {boolean} props.open - Controls whether the modal is open or closed
  * @param {Function} props.onClose - Function to call when the modal should be closed
  * @param {Function} props.onSubmit - Function to call when the form is submitted
  * @param {SuccessObject} [props.saveSuccess={}] - Object indicating the success status of saving the form
  * @param {SuccessObject} [props.accountCreatedSuccess={}] - Object indicating the success status of creating an account
- * @returns {React.ReactElement} The EmailModal component
+ * 
+ * @example
+ * <MedicalCheckInModal
+ *   open={isModalOpen}
+ *   onClose={handleCloseModal}
+ *   onSubmit={handleSubmitCheckIn}
+ *   saveSuccess={{ success: true, message: "Form saved successfully" }}
+ *   accountCreatedSuccess={{ success: true, message: "Account created successfully" }}
+ * />
  */
-export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountCreatedSuccess = {} }) => {
+export const MedicalCheckInModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountCreatedSuccess = {} }) => {
   const [email, setEmail] = useState('');
-  const canvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [messages, setMessages] = useState([]);
   const [hasError, setHasError] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
 
-   /**
-   * Effect to clear state when modal closes
+  /**
+   * Effect to reset state when modal is closed
    */
   useEffect(() => {
     if (!open) {
       setEmail('');
-      setIsDrawing(false);
       setIsProcessing(false);
       setMessages([]);
       setHasError(false);
@@ -49,8 +59,8 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
     }
   }, [open]);
 
-    /**
-   * Effect to handle save success
+  /**
+   * Effect to handle save success status
    */
   useEffect(() => {
     if (saveSuccess?.success !== null) {
@@ -59,19 +69,18 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
     }
   }, [saveSuccess]);
 
-    /**
-   * Effect to handle account creation success
+  /**
+   * Effect to handle account creation success status
    */
   useEffect(() => {
     if (accountCreatedSuccess?.success !== null) {
-      addMessage(accountCreatedSuccess.success, accountCreatedSuccess.message || (accountCreatedSuccess.success ? 'Account sequencing instantiated successfully!' : 'Failed to instantiated account sequence.'));
+      addMessage(accountCreatedSuccess.success, accountCreatedSuccess.message || (accountCreatedSuccess.success ? 'Medical check-in completed successfully!' : 'Failed to complete medical check-in.'));
       setHasError(!accountCreatedSuccess.success);
     }
   }, [accountCreatedSuccess]);
 
-    /**
+  /**
    * Adds a message to the messages state
-   * 
    * @param {boolean} isSuccess - Whether the message indicates a success or failure
    * @param {string} message - The message to display
    */
@@ -80,35 +89,29 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
     setIsProcessing(false);
   };
 
-    /**
+  /**
    * Handles form submission
-   * 
    * @param {React.FormEvent<HTMLFormElement>} [event] - The form submit event
    * @param {boolean} [retry=false] - Whether this is a retry attempt
    */
-  const handleSubmit = (event, retry=false) => {
+  const handleSubmit = (event, retry = false) => {
+    event?.preventDefault();
     setIsProcessing(true);
     setMessages([]);
     setHasError(false);
-    console.log(retry)
-    // const signatureDataURL = canvasRef.current.toDataURL();
     onSubmit(email, retry);
   };
 
-    /**
+  /**
    * Handles retry action
-   * 
-   * @param {boolean} retry - Whether to retry the submission
    */
-  const handleRetry = (retry) => {
-    console.log("handleRetry called with retry:", retry);
+  const handleRetry = () => {
     setMessages([]);
-    handleSubmit(null, retry);// Passing null as the event since it's not needed
+    handleSubmit(null, true);
   };
 
-    /**
+  /**
    * Starts drawing on the canvas
-   * 
    * @param {React.MouseEvent<HTMLCanvasElement>} e - The mouse event
    */
   const startDrawing = (e) => {
@@ -119,9 +122,8 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
     setIsDrawing(true);
   };
 
-    /**
+  /**
    * Continues drawing on the canvas
-   * 
    * @param {React.MouseEvent<HTMLCanvasElement>} e - The mouse event
    */
   const draw = (e) => {
@@ -132,14 +134,14 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
     ctx.stroke();
   };
 
-   /**
+  /**
    * Stops drawing on the canvas
    */
   const stopDrawing = () => {
     setIsDrawing(false);
   };
 
-   /**
+  /**
    * Clears the signature from the canvas
    */
   const clearSignature = () => {
@@ -148,9 +150,8 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
-   /**
+  /**
    * Renders messages
-   * 
    * @returns {React.ReactElement[]} An array of message elements
    */
   const renderMessages = () => {
@@ -171,76 +172,76 @@ export const EmailModal = ({ open, onClose, onSubmit, saveSuccess = {}, accountC
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Confirm the Client's Email </DialogTitle>
-      <DialogContent>
-        {renderMessages()}
-        <TextField
-          autoFocus
-          margin="dense"
-          id="email"
-          label="Email Address"
-          type="email"
-          fullWidth
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={isProcessing || isAllSuccess}
-        />
-        <Box mt={2} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
-          {isAllSuccess ? (
-            <Box width={500} height={200} display="flex" alignItems="center" justifyContent="center" border="1px solid #4CAF50" borderRadius={2}>
-              <CheckCircleOutlineIcon style={{ color: '#4CAF50', fontSize: 100 }} />
-            </Box>
-          ) : (
-            <>
-              <canvas
-                ref={canvasRef}
-                width={500}
-                height={200}
-                style={{ border: '1px solid #000', cursor: isProcessing ? 'not-allowed' : 'crosshair' }}
-                onMouseDown={!isProcessing ? startDrawing : undefined}
-                onMouseMove={!isProcessing ? draw : undefined}
-                onMouseUp={!isProcessing ? stopDrawing : undefined}
-                onMouseOut={!isProcessing ? stopDrawing : undefined}
-              />
-              <Box mt={1} display="flex" justifyContent="space-between" width="100%">
-                <Button onClick={clearSignature} disabled={isProcessing}>Clear Signature</Button>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={isCompleted}
-                      onChange={(e) => setIsCompleted(e.target.checked)}
-                      disabled={isProcessing}
-                    />
-                  }
-                  label="Complete"
-                />
-              </Box>
-            </>
-          )}
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        {isProcessing ? (
-          <CircularProgress size={24} />
-        ) : showCloseButton ? (
-          <Button onClick={onClose}>Close</Button>
-        ) : hasError ? (
-          <>
-            <Button onClick={onClose}>Cancel</Button>
-            <Button onClick={() => {handleRetry(true); console.log("Retry button clicked, setting retry to true"); }} startIcon={<ReplayIcon />}>Retry</Button>
-          </>
+    <DialogTitle>Confirm Medical Check-In</DialogTitle>
+    <DialogContent>
+      {renderMessages()}
+      <TextField
+        autoFocus
+        margin="dense"
+        id="email"
+        label="Email Address"
+        type="email"
+        fullWidth
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        disabled={isProcessing || isAllSuccess}
+      />
+      <Box mt={2} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+        {isAllSuccess ? (
+          <Box width={500} height={200} display="flex" alignItems="center" justifyContent="center" border="1px solid #4CAF50" borderRadius={2}>
+            <CheckCircleOutlineIcon style={{ color: '#4CAF50', fontSize: 100 }} />
+          </Box>
         ) : (
           <>
-            <Button onClick={onClose} disabled={isProcessing}>Cancel</Button>
-            <Button 
-              onClick={handleSubmit} 
-              disabled={isProcessing || !email.trim() || !canvasRef.current?.toDataURL() || !isCompleted}
-            >
-              Submit
-            </Button>
+            <canvas
+              ref={canvasRef}
+              width={500}
+              height={200}
+              style={{ border: '1px solid #000', cursor: isProcessing ? 'not-allowed' : 'crosshair' }}
+              onMouseDown={!isProcessing ? startDrawing : undefined}
+              onMouseMove={!isProcessing ? draw : undefined}
+              onMouseUp={!isProcessing ? stopDrawing : undefined}
+              onMouseOut={!isProcessing ? stopDrawing : undefined}
+            />
+            <Box mt={1} display="flex" justifyContent="space-between" width="100%">
+              <Button onClick={clearSignature} disabled={isProcessing}>Clear Signature</Button>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isCompleted}
+                    onChange={(e) => setIsCompleted(e.target.checked)}
+                    disabled={isProcessing}
+                  />
+                }
+                label="Complete"
+              />
+            </Box>
           </>
         )}
-      </DialogActions>
-    </Dialog>
-  );
+      </Box>
+    </DialogContent>
+    <DialogActions>
+      {isProcessing ? (
+        <CircularProgress size={24} />
+      ) : showCloseButton ? (
+        <Button onClick={onClose}>Close</Button>
+      ) : hasError ? (
+        <>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={() => handleRetry()} startIcon={<ReplayIcon />}>Retry</Button>
+        </>
+      ) : (
+        <>
+          <Button onClick={onClose} disabled={isProcessing}>Cancel</Button>
+          <Button 
+            onClick={handleSubmit}
+            disabled={isProcessing || !email.trim() || !canvasRef.current?.toDataURL() || !isCompleted}
+          >
+            Submit
+          </Button>
+        </>
+      )}
+    </DialogActions>
+  </Dialog>
+);
 };

@@ -70,6 +70,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useFetch, useSendToAPI } from '../../../util/ApiHooks';
 import { DynamicForm } from './RenderChildComponents/RenderConfirmationForm';
 import { parseApiData } from './FormHelpers/ParesApi'
@@ -88,8 +89,9 @@ export const ConfirmationForm = ({ activeForm }) => {
   // State to hold the filtered results
 const [filteredResults, setFilteredResults] = useState([]);
 const [isApplying, setIsApplying] = useState(false);
-const [allData, setAllData] = useState({});
-const [isUpdate, setIsUpdate] =useState();
+const [expandedPanel, setExpandedPanel] = useState(false);
+// const [allData, setAllData] = useState({});
+// const [isUpdate, setIsUpdate] =useState();
 const [modalOpen, setModalOpen] = useState(false);
 const [formSaveSucess ,setFormSaveSucess]=useState({success: null, message: ""})
 const [accountCreatedSucess, setAccountCreatedSucess] = useState({success: null, message: ""})
@@ -110,7 +112,7 @@ const [accountCreatedSucess, setAccountCreatedSucess] = useState({success: null,
     error: deleteAccountError,
     response: deleteAccountResponse,
     LoadComponent: deleteAccountLoadingComponent
-  } = useSendToAPI('http://localhost:3000/api/delete/DiabetesManagement/delete', 'DELETE');
+  } = useSendToAPI('http://localhost:3000/api/delete/DiabetesManagement/delete/stjda-signup-forms', 'DELETE');
 
 
   const {
@@ -144,6 +146,7 @@ const [accountCreatedSucess, setAccountCreatedSucess] = useState({success: null,
     gender: [],
     showAll: true,
   });
+  
   // State to hold the form data for a new entry
   const [formData, setFormData] = useState({
     // anything in this state must also be in the ParseApi.js
@@ -200,6 +203,76 @@ const [accountCreatedSucess, setAccountCreatedSucess] = useState({success: null,
     consent: false,//
     document: null,//
     });
+
+    const handleAccordionChange = (panel) => (event, isExpanded) => {
+      setExpandedPanel(isExpanded ? panel : false);
+      
+      // Reset formData when accordion is expanded or collapsed
+      setFormData({
+        name: '',
+        age: '',
+        dateOfBirth: '',
+        isMDI: false,
+        pumpModelBrand: '',
+        isCGM: false,
+        cgmModelBrand: '',
+        legalGuardian: '',
+        contactPhone: '',
+        carbsBreakfast: '',
+        carbsLunch: '',
+        carbsDinner: '',
+        mealtimeRestrictions: '',
+        insulinToCarbRatio: '',
+        correctionFactor: '',
+        target: '',
+        mdiInsulinType: '',
+        allergies: '',
+        otherDiagnosis: '',
+        otcMedications: '',
+        otherPrescriptions: '',
+        insulinFor15gSnack: false,
+        correctWith15gOrLess: false,
+        hyperglycemiaSymptoms: '',
+        hyperglycemiaTreatment: '',
+        hypoglycemiaSymptoms: '',
+        hypoglycemiaTreatment: '',
+        diabetesManagementStruggles: '',
+        glucoseSensitiveFoods: '',
+        diabetesPhysician: '',
+        officePhoneNumber: '',
+        diagnosisDate: '',
+        gender: '',
+        rapidActingInsulinType: '',
+        longActingInsulinType: '',
+        parent1FirstName: '',
+        parent1LastName: '',
+        parent1Mobile: '',
+        parent2FirstName: '',
+        parent2LastName: '',
+        parent2Mobile: '',
+        preferredLanguage: '',
+        preferredRoommate: '',
+        sessions: [],
+        specialInstructions: '',
+        primaryCarePhysician: '',
+        submissionDate: '',
+        tShirtSize: '',
+        selectedCamps: '',
+        originalKey: '',
+        consent: false,
+        document: null,
+      });
+    
+      // If the accordion is being expanded, populate the form with the corresponding data
+      if (isExpanded) {
+        const resultIndex = parseInt(panel.replace('panel', ''), 10);
+        const result = filteredResults[resultIndex];
+        if (result && result.formData) {
+          setFormData(result.formData);
+        }
+      }
+    };
+  
 // Effect hook to initialize Filter Maps when data is loaded
 useEffect(() => {
     if (data) {
@@ -281,13 +354,13 @@ const handleSubmit = async (event, resultIndex = null) => {
     const updatedResult = filteredResults[resultIndex];
     console.log('updatedResult: ', updatedResult);
     // const formData = filteredResults[resultIndex].formData;
-    setAllData(prevData => ({
-      ...prevData,
-      [updatedResult.key]: {
-          apiData: updatedResult.apiData, 
-          formData: updatedResult.formData
-      }
-    }))
+    // setAllData(prevData => ({
+    //   ...prevData,
+    //   [updatedResult.key]: {
+    //       apiData: updatedResult.apiData, 
+    //       formData: updatedResult.formData
+    //   }
+    // }))
   } else {
       try {
         if(!modalOpen){
@@ -305,9 +378,9 @@ const handleSubmit = async (event, resultIndex = null) => {
   const handleFinalSubmit = async (email, retry) => {
     // Extract originalKey from formData
     const { originalKey, ...restFormData } = formData;
-    if(isSHA256(originalKey)){
-      setIsUpdate(true)
-    }
+    // if(isSHA256(originalKey)){
+    //   setIsUpdate(true)
+    // }
     if(retry){
       setFormSaveSucess({ success: null, message: "" })
       setAccountCreatedSucess({ success: null, message: "" });
@@ -321,7 +394,7 @@ const handleSubmit = async (event, resultIndex = null) => {
  
     try {
       // Save the completed form in object storage
-      const saveFormResponse = await sendFormData({dataToSend, retry: retry === true ? 1 : 0, originalKey: originalKey},);
+      const saveFormResponse = await sendFormData({dataToSend, retry: retry === true ? 1 : 0, originalKey: originalKey});
       
         if(saveFormResponse.status == 200){ // handling status code 200, 201, 409
             try {
@@ -641,26 +714,41 @@ const applyFilters = () => {
       <Typography variant="h4">
         Diabetes Management Form
       </Typography>
-      <Button variant="outlined" onClick={() => activeForm("")}>
+      <Button 
+      startIcon={<ArrowBackIcon />}  
+      variant="outlined" 
+      onClick={() => activeForm("")}
+      >
         Back
       </Button>
     </Box>
-      {renderFilters()}
-      {isApplying ? (
+
+    {renderFilters()}
+
+    {isApplying ? (
         <Box display="flex" justifyContent="center" my={4}>
           <CircularProgress />
         </Box>
       ) : filteredResults.length > 0 ? (
         filteredResults.map((result, index) => (
-          <Accordion key={index}>
+            <Accordion 
+              key={index}
+              expanded={expandedPanel === `panel${index}`}
+              onChange={handleAccordionChange(`panel${index}`)}
+            >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography>
-              {`${result.registrationFormData.firstName} ${result.registrationFormData.lastName}, Age: ${result.age} | is complete: `}
-              {displayIcon(result.registrationFormData.isCompleted)}
+            <Box display="flex" alignItems="center" width="100%">
+              <Typography flexGrow={1}>
+                {`${result.registrationFormData.firstName} ${result.registrationFormData.lastName}, Age: ${result.age}`}
               </Typography>
+              <Box display="flex" alignItems="center">
+                <Typography mr={1}>Completed:</Typography>
+                {displayIcon(result.registrationFormData.isCompleted)}
+              </Box>
+            </Box>
             </AccordionSummary>
             <AccordionDetails>
-              {/* {renderForm(result, index)} */}
+              {/* renders the form */}
               <DynamicForm handleChange={handleChange} handleSubmit={handleSubmit} apiData={result.formData} setFormData={setFormData} />
             </AccordionDetails>
           </Accordion>
@@ -673,6 +761,7 @@ const applyFilters = () => {
         open={modalOpen}
         onClose={() => {
           setModalOpen(false);
+          setFormData({})
           setFormSaveSucess({success: null, message: ""})
           setAccountCreatedSucess({success: null, message: ""})
           activeForm("")

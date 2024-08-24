@@ -71,7 +71,7 @@ export const UploadFileHelper = (fieldName, setLocalFormData, isMultiple = false
       const result = await sendUpload(dataToSend);
       console.log("result: ", result);
 
-        // notify the parent component, set its state
+        // notify the parent component, set its state handle multiple uploads
         if (result) {
           setLocalFormData(prevData => {
             const newFileData = {

@@ -253,6 +253,22 @@ const handleFormSelect = (formType, formName) => {
   setSelectedForm(`${formType}:${formName}`);
 };
 
+const formPicker = () => {
+  const currForm = selectedForm.split(':')[1];
+
+  
+  switch (currForm) {
+    case 'Confirm Reservation':
+      setActiveForm('ConfirmReservation');
+      break;
+    case 'Med-Check-in':
+      setActiveForm('Med-Check-in');
+      break;
+    default:
+      setActiveForm(null);
+  }
+}
+
 const handleOpenModal = () => setOpenModal(true);
 
 const handleCloseModal = () =>{ return false }
@@ -261,7 +277,7 @@ const handleCancelModal = () => { setWasConfirmed(false); setOpenModal(false) };
 
 const handleClear = () => { setSelectedForm(''); };
 
-const handleSectionChange = (section) => { userProfileStore.setSelectedSection(section); };
+const handleSectionChange = (section) => { userProfileStore.setSelectedSection(section); setSelectedForm('');};
 
   // Logic to save the changes, this is passed as a prop to the modal
 const handleSave = (personData, careData) => {
@@ -297,20 +313,6 @@ const handleLogout = () => {
   setLogoutDialogOpen(true);
 };
 
-const formPicker = () => {
-  const currForm = selectedForm.split(':')[1];
-  
-  switch (currForm) {
-    case 'Confirm Reservation':
-      setActiveForm('ConfirmReservation');
-      break;
-    case 'Med-Check-in':
-      setActiveForm('Med-Check-in');
-      break;
-    default:
-      setActiveForm(null);
-  }
-}
 
 const confirmLogout = () => {
   setLogoutDialogOpen(false);
@@ -533,8 +535,9 @@ const parseLocalStorage = (value) => {
 
               {userProfileStore.selectedSection === "Contact" ? (
                 <ContactContainer />
+                // this handles the scenario where the sidebar changes, it stops displaying the form
               ) : (userProfileStore.selectedSection === "Forms" && activeForm === 'ConfirmReservation') ? <ConfirmationForm activeForm={setActiveForm}/> 
-                : (activeForm === 'Med-Check-in') ? <MedCheckInForm activeForm={setActiveForm}/> : (
+                : (userProfileStore.selectedSection === "Forms" && activeForm === 'Med-Check-in') ? <MedCheckInForm activeForm={setActiveForm}/> : (
                 <Grid container spacing={4}>
                   {/* Left Column */}
                   <Grid item xs={12} md={4}>

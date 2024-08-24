@@ -1,5 +1,5 @@
 /**
- * DynamicForm Component
+ * DynamicForm Component Renders the Form inside the Accordian of the Confirmation Form COmponent
  * 
  * This component renders a dynamic form based on a predefined form structure.
  * It uses the template for rendering the field questions of the confirmation form.
@@ -29,6 +29,13 @@
  * 
  * The component uses Material-UI components for styling and layout.
  * It also includes custom logic for formatting and handling specific field types.
+ *  * @example
+ * <DynamicForm
+ *   handleChange={handleChange}
+ *   handleSubmit={handleSubmit}
+ *   apiData={initialData}
+ *   setFormData={setFormData}
+ * />
  */
 import React, { useEffect, useState, useRef } from 'react';
 import {
@@ -46,7 +53,6 @@ import {
   FormHelperText,
   IconButton,
   Typography,
-  Tooltip
 } from '@mui/material';
 import { UploadFile, Clear } from '@mui/icons-material';
 import { UploadFileHelper } from '../FormHelpers/UploadImageToServer';
@@ -58,14 +64,22 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
   const [isFormChanged, setIsFormChanged] = useState(false);
   const [fileData, setFileData] = useState({key: null, url: null});
   const fileInputRef = useRef({});
+
+    /**
+   * File upload helper hook
+   * @type {Object}
+   */
   const { // destructue the upload file helper hook, from UploadImageToServer.js
     processAndUploadFile, 
     uploadLoading, 
     uploadError, 
     uploadResponse, 
     uploadLoadingComponent 
-  } = UploadFileHelper('', setLocalFormData); // We'll set the fieldName later
-  // Store file metadata in localFormData
+  } = UploadFileHelper('', setLocalFormData, false); // We'll set the fieldName later
+
+   /**
+   * Effect to sync local form data with parent component
+   */
   useEffect(() => {
     setFormData(prevData => ({...prevData, ...localFormData}));
     console.log("local form data",localFormData)
@@ -78,6 +92,11 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
     }
   }, [localFormData, setFormData]);
 
+  /**
+   * Handles changes in form fields
+   * @param {Event} e - The change event
+   * @param {string} fieldName - Name of the changed field
+   */
   const handleLocalChange = (e, fieldName) => {
     const { value, type, checked } = e.target;
     let newValue;
@@ -103,6 +122,11 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
     handleChange({ target: { name: fieldName, value: newValue } }, index);
   };
 
+    /**
+   * Handles file selection and upload
+   * @param {Event} e - The file input change event
+   * @param {string} fieldName - Name of the file field
+   */
   const handleFileChange = async (e, fieldName) => {
     const files = Array.from(e.target.files);
   
@@ -112,26 +136,28 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
           const uploadedFileData = await processAndUploadFile(file, fieldName);
           return {
             name: file.name,
-            key: uploadedFileData.key,
-            url: uploadedFileData.url
+            key: uploadedFileData?.key,
+            url: uploadedFileData?.url
           };
         })
       );
   
     const newValue = files.length === 1 ? uploadedFiles[0] : uploadedFiles;
-  
+
     if (newValue) {
-      
       // Use the processAndUploadFile function from the hook and upload the file directly right now
       await processAndUploadFile(newValue, fieldName);
   
-      setIsFormChanged(true);
-      
       // Notify parent component
       handleChange({ target: { name: fieldName, value: newValue } }, index);
     }}
   };
 
+    /**
+   * Clears selected file(s)
+   * @param {string} fieldName - Name of the file field
+   * @param {number} [fileIndex] - Index of the file to clear (for multiple files)
+   */
   const handleFileClear = (fieldName) => {
     setLocalFormData(prevData => {
       const currentValue = prevData[fieldName];
@@ -155,11 +181,22 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
     handleChange({ target: { name: fieldName, value: null } }, index);
   };
 
+   /**
+   * Formats select field values
+   * @param {string} value - The value to format
+   * @returns {string} Formatted value
+   */
   const formatSelectValue = (value) => {
     if (typeof value !== 'string') return '';
     return value.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   };
 
+    /**
+   * Retrieves the value of a form field
+   * @param {string} fieldName - Name of the field
+   * @param {string} fieldType - Type of the field
+   * @returns {*} The field value
+   */
   const getFieldValue = (fieldName, fieldType) => {
     let value;
 
@@ -194,6 +231,10 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
     return value;
   };
 
+    /**
+   * Validates the form
+   * @returns {boolean} True if form is valid, false otherwise
+   */
   const validateForm = () => {
     const newErrors = {};
     Object.entries(formStructure).forEach(([_, fields]) => {
@@ -207,6 +248,11 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
     return Object.keys(newErrors).length === 0;
   };
 
+    /**
+   * Renders a form field based on its type
+   * @param {Object} field - Field configuration object
+   * @returns {React.ReactElement} Rendered form field
+   */
   const renderField = (field) => {
     const commonProps = {
       fullWidth: true,
@@ -246,7 +292,6 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
         />
       );
     }
-
     switch (field.type) {
       case 'text':
       case 'textarea':
@@ -343,8 +388,8 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
           );
         }
 // this should handle multiple uploads but, 
-// multiple are not being set when the initial object form data is being pulled in from the database in the Get-hook
-// unless theres a reason im not doing multiple uploads right now
+// multiple uploads are not being set when the initial object form data is being pulled in from the database in the Get-hook
+// unless theres a reason im not doing multiple uploads right now, wil throw an errorthey 'key' is not defined in the console because only one is being rendered, not multiple
         case 'file':  
           return (
           <Box>
@@ -353,13 +398,14 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
               multiple={field.multiple} // change this in the template to allow multiple
               ref={el => fileInputRef.current[field.name] = el}
               style={{ display: 'none' }}
-              onChange={(e) => handleFileChange(e, field.name)}
+              onChange={(e) => {handleFileChange(e, field.name); setIsFormChanged(true);}}
               required={field.required}
             />
             <Button
               variant="contained"
-              onClick={() => fileInputRef.current[field.name].click()}
+              onClick={() => {fileInputRef.current[field.name].click();}}
               startIcon={<UploadFile />}
+              disabled={localFormData.document?true:false}
             >
               {field.label}
             </Button>
@@ -368,7 +414,8 @@ export const DynamicForm = ({handleChange, handleSubmit, apiData, index=null, se
                 {Array.isArray(localFormData[field.name]) ? (
                   localFormData[field.name].map((file, index) => (
                     <Box key={index} mt={1} display="flex" flexDirection="column">
-                      <IconButton onClick={() => handleFileClear(field.name, index)} size="small" style={{ color: 'red' }}>
+              {/* If you want to add logic to delete the form from the database when the red 'X' is clicked do it in handleClearFile */}
+                      <IconButton onClick={() => {handleFileClear(field.name, index)  }} size="small" style={{ color: 'red' }}>
                         <Clear />
                       </IconButton>
                       <Box flexGrow={1}>
