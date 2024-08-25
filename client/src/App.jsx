@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import { ProfileContainer } from './SideBar/ProfileSectionContainer';
-import { ProfileRedirect, Logout, EditProfileRedirect } from './LoginRedirects';
+import { ProfileRedirect, Logout, EditProfileRedirect, ValidateToken } from './LoginRedirects';
 import { ApolloClient, InMemoryCache, ApolloProvider, createHttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { SignInSection } from './Login';
 import { Error401, Error409 } from './ErrorPages';
-import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider } from 'react-router-dom';
+import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider, Navigate  } from 'react-router-dom';
 
 // Set up an Apollo client to point towards graphql backend
 const httpLink = createHttpLink({
@@ -67,13 +67,15 @@ function App() {
           {/* error pages */}
           <Route path="/error=emailNotVerified" element={<Error401/>} />
           <Route path="/error=Conflict" element={<Error409 />} />
+          {/* Validate The new users incoming */}
+          <Route path="/validate" element={<ValidateToken />} />
           {/* Reviews page Route */}
           {/* <Route path="/reviews" element={<ProtectedRoutes element={<Reviews />} />} /> */}
-
           {/* Privacy Policy Route */}
           {/* <Route path="/privacy" element={<PrivacyPolicy />} /> */}
           {/* Terms of use Route */}
           {/* <Route path="/terms" element={<TermsAndConditions />} /> */}
+          <Route path="*" element={<Navigate to="/" replace />} />
       </>
       )
     )

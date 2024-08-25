@@ -9,6 +9,14 @@ const { update } = require('../../models/BGTargets');
 const { isAdmin } = require('../../utils/admins/validateAdmins');
 config({ path: './.env' });
 
+/**
+ * Express router providing user signup related routes
+ * @module routers/signup
+ * @requires express
+ * @requires jsonwebtoken
+ * @requires crypto
+ * @requires @emailjs/nodejs
+ */
 
 // JWT setup
 const jwtSecret = 'mysecretsshhhhh';
@@ -17,24 +25,37 @@ const jwtExpiration = '2h';
 const jwtEmailSecret = 'mysecretsshhhhh';
 const jwtEmailExpiration = '14d';
 
-// api/signup/send-email
+/**
+ * Send validation email to new user
+ * @name POST/api/signup/send-email
+ * @function
+ * @memberof module:routers/signup
+ * @inner
+ * @param {string} req.body.newAccountEmail - Email address of the new user
+ * @returns {Object} JSON object with message and status
+ */
 router.post('/send-email', async (req, res) => {
     try {
         const emailPattern = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}\b/;
-        const { newAccountEmail } = req.body;
+        const { newAccountEmail, key } = req.body;
         
         if (!emailPattern.test(newAccountEmail)) {
             return res.status(400).json({ error: "The email address provided was invalid." });
         }
 
-        // Calculate checksum
-        const checksum = crypto.createHash('sha256').update(JSON.stringify(req.body)).digest('hex');
+        if(!key){
+            return res.status(400).json({ error: "No key provided." });
+        }
+        console.log("computing checksum on: ", req.body)
+
+        // grab the checksome
+        const checksum = key;
 
          // Generate JWT
          const token = jwt.sign({ checksum }, jwtEmailSecret, { expiresIn: jwtEmailExpiration });
 
         // Construct validation link
-        const validationLink = `https://yourapp.com/validate?${token}`;
+        const validationLink = `http://localhost:5173/validate?${token}`;
 
         const templateParams = {
             setup_link: validationLink,
@@ -65,9 +86,86 @@ router.post('/send-email', async (req, res) => {
     }
 });
 
+/**
+ * Validate user token
+ * @name GET/api/signup/validate/:token
+ * @function
+ * @memberof module:routers/signup
+ * @inner
+ * @param {string} req.params.token - JWT token to validate
+ * @returns {Object} JSON object with validation status and message
+ */
+router.get('/validate/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+        
+        if (!token) {
+            return res.status(400).json({ error: "Token is missing" });
+        }
 
-// 'api/signup/create' endpoint
-// validate their email is good and not a duplicate
+        // Verify the token
+        const decoded = jwt.verify(token, jwtEmailSecret);
+
+        // Check if the token is expired (14 days from issuance)
+        const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+        const sevenDaysInSeconds = 14 * 24 * 60 * 60; // 14 days in seconds
+
+        if (currentTime > decoded.iat + sevenDaysInSeconds) {
+            return res.status(401).json({ error: "Token has expired" });
+        }
+        console.log("decoded", decoded)
+        const { checksum } = decoded
+
+        if (!checksum) {
+            return res.status(400).json({ error: "Invalid token" });
+        }
+        console.log("checksum: ",checksum)
+        // Check if the data exists in the database
+        const bucketName = 'stjda-signup-forms';
+         const dbResponse = await fetch(`http://34.135.9.49:3000/api/minioG/checkObjectKey/${bucketName}/${checksum}`);
+         
+         if (!dbResponse.ok) {
+             throw new Error(`Database request failed with status ${dbResponse.status}`);
+         }
+ 
+         const dbData = await dbResponse.json();
+
+         if (dbData.exists) {
+             console.log("dbData ",dbData)
+             // Data exists, user is legitimate
+             return res.json({ 
+                 valid: true, 
+                 key: checksum,
+                 message: "Token validated successfully and user data found."
+             });
+         } else {
+             // Data doesn't exist
+             return res.status(404).json({ 
+                 valid: false, 
+                 error: "User data not found in the database."
+             });
+         }
+ 
+     } catch (err) {
+         console.error('Token validation failed:', err);
+         return res.status(500).json({ 
+             valid: false, 
+             error: 'Token validation failed', 
+             details: err.message 
+         });
+     }
+ });
+
+/**
+ * Create new user account
+ * @name POST/api/signup/create
+ * @function
+ * @memberof module:routers/signup
+ * @inner
+ * @param {Object} req.body - User data
+ * @param {string} req.body.role - User role (volunteer or camper)
+ * @returns {Object} JSON object with user data and JWT token
+ */
 router.post('/create', async (req,res)=>{
     let userData;
     let originsData;
@@ -82,7 +180,7 @@ router.post('/create', async (req,res)=>{
     if (!req.body) {
         return res.status(400).json({ message: "Bad request, no data provided" });
 
-        
+    
     }else if(req.body.role === 'volunteer'){
         userData = {
             // ID: null,

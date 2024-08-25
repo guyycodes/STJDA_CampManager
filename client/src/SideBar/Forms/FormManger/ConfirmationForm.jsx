@@ -398,6 +398,7 @@ const handleSubmit = async (event, resultIndex = null) => {
       
         if(saveFormResponse.status == 200){ // handling status code 200, 201, 409
             try {
+              const { checksum } = saveFormResponse
               const deleteSuccess = await deleteForm({originalKeyKey: originalKey});
               
               if(deleteSuccess.status === 200){
@@ -408,7 +409,7 @@ const handleSubmit = async (event, resultIndex = null) => {
               }
               
               if (!isSHA256(originalKey)) { // if the original key is not SHA256, we're creating a new account
-                const sendEmailToAccountResponse = await sendEmailToAccount({dataToSend, newAccountEmail: email});
+                const sendEmailToAccountResponse = await sendEmailToAccount({dataToSend, key: checksum, newAccountEmail: email});
                 if (sendEmailToAccountResponse?.status === 200) {
                   console.log('Setting account created success');
                   setAccountCreatedSucess({ success: true, message: "Email successfully sent" });

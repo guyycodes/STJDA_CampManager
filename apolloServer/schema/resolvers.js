@@ -738,7 +738,7 @@ const resolvers = {
       throw new Error('Failed to fetch assignments');
     }
   },
-},
+}, // end of Queries
   Mutation: {
     updatePerson: async (_, args, context) => {
       const emailPattern = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}\b/;
@@ -1469,7 +1469,7 @@ const resolvers = {
                   volunteerTypesInDB.push(volunteerTypes[volunteerIds.indexOf(id)]);
                 });
               }
-                // Remove deleted volunteers
+                // Remove deleted volunteers: Explination of whats happening here
                 // If the id is not in volunteerIds, the function returns true, and that id is included in the removedVolunteerIds array.
                 // After this, removedVolunteerIds contains all the IDs that are in the database but not in the new input.
                 // Then we remove these IDs:
@@ -1555,9 +1555,91 @@ const resolvers = {
     }
     return updatedCampers;
     },
-  }
-};
 
+  },
+  registerUser: async (_, args, context) => {
+    const {
+      confirmPassword,
+      countryCode,
+      dateOfBirth,
+      email,
+      firstName,
+      key,
+      lastName,
+      notifications,
+      password,
+      phone,
+      profileImage,
+      role
+    } = args;
+  
+    try {
+      // Check if the key exists in Minio and get the object data
+      const bucket = 'stjda-signup-forms';
+      const minioResponse = await fetch(`http://34.135.9.49:3000/api/minioG/getObjectByKey/${bucket}/${key}`);
+      const minioData = await minioResponse.json();
+  
+      if (!minioData.exists) {
+        return {
+          success: false,
+          message: "Invalid registration key."
+        };
+      }
+  
+      // Log the data from Minio
+      console.log("Data from Minio:", minioData.data);
+  
+    // Prepare the data to be sent to the signup endpoint
+    const signupData = {
+      ...minioData.data, // Spread the data from Minio
+      email,
+      password,
+      firstName,
+      lastName,
+      role,
+      countryCode,
+      dateOfBirth,
+      notifications,
+      phone,
+      profileImage
+    };
+
+    // Send the data to the signup endpoint
+    const signupResponse = await fetch('http://localhost:3000/api/signup/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(signupData),
+    });
+    const signupResult = await signupResponse.json();
+
+    // Check the response from the signup endpoint
+    if (signupResult.success) {
+      return {
+        success: true,
+        message: "User registered successfully."
+      };
+    } else {
+      return {
+        success: false,
+        message: signupResult.message || "Failed to register user."
+      };
+    }
+  
+    } catch (error) {
+      console.error("Error in registerUser resolver:", error);
+      return {
+        success: false,
+        message: "An error occurred during registration."
+      };
+    }
+
+  },// end of mutations
+
+};// end of all resolvers
+
+// helper for sorting and updating
 async function updateCreateOrDeleteManySequelize(Model, data, foreignKey, foreignId) {
   // Get all existing records for this foreign key
   const existingRecords = await Model.findAll({

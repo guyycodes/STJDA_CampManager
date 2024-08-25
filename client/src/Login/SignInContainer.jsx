@@ -4,8 +4,17 @@ import { SignInForm, CreateAccountForm} from "./SignUp";
 import { SignUpImage } from "../assets/SignInPageImage/index.js";
 import { Modal, Box, Typography, Button, Checkbox, FormControlLabel, CircularProgress } from "@mui/material";
 import { useNavigate } from 'react-router-dom'; 
+import { isSHA256 } from '../util/DataIntegrity'
 
-export const SignInSection = () => {
+/**
+ * SignInSection component handles user sign-in and account creation processes.
+ * It manages the display of sign-in form, account creation form, and terms & conditions modal.
+ * 
+ * @param {Object} props - Component props
+ * @param {string} [props.checksum] - SHA256 checksum for account verification
+ * @returns {React.Component} A component that renders sign-in and account creation forms
+ */
+export const SignInSection = ({ checksum }) => { // the checksum is passed all the way down to the form, then passed as formData.key
 
     const navigate = useNavigate();
     const [modalOpen, setModalOpen] = useState(false);
@@ -14,6 +23,11 @@ export const SignInSection = () => {
     const [formsData, setFormsData] = useState()
     const [spinner, setSpinner] = useState()
 
+    /**
+     * Parses the URL from the server response and navigates to the corresponding route.
+     * 
+     * @param {string} d - Server response containing the URL
+     */
     const parseURL = (d) =>{
       // Get the last part, which is the URL
       const url = d.split(' ').slice(-1)[0]; 
@@ -22,17 +36,24 @@ export const SignInSection = () => {
       navigate(pathname)
     }
 
+    /**
+     * Submits user data to the server for account creation or verification.
+     * 
+     * @param {Object} theFormData - User form data
+     * @param {string} theFormData.role - User role (e.g., 'volunteer')
+     * @param {string} [theFormData.key] - SHA256 checksum for account verification
+     */
     const submitUser = async (theFormData) =>{
       if (termsAccepted && (theFormData.role === 'volunteer')) {
           try{
-              const response = await fetch('http://localhost:3000/api/signup/create', {
-                  method: 'POST', // Specify the method
-                  headers: {
-                      'Content-Type': 'application/json'
-                  },
-                  credentials: 'include',
-                  body: JSON.stringify(theFormData)
-              });
+              // const response = await fetch('http://localhost:3000/api/signup/create', {
+              //     method: 'POST', // Specify the method
+              //     headers: {
+              //         'Content-Type': 'application/json'
+              //     },
+              //     credentials: 'include',
+              //     body: JSON.stringify(theFormData)
+              // });
               console.log("the form data: ", theFormData)
               const data = await response.text();
               if(response.ok){
@@ -43,11 +64,19 @@ export const SignInSection = () => {
             }catch(err){
               console.log(err)
             }
-      }else{
+      }else if(termsAccepted && (isSHA256(theFormData.key))){
+        console.log("we have the checksum: ", isSHA256(theFormData.key), theFormData)
+        // call apollo server and send the checksum
+      }
+      else{
         alert('Oops! 😅 Doesnt look like you accepted the terms: \n To create an account you must accept the terms')
       }
     }
-
+    /**
+     * Handles the acceptance of terms and conditions.
+     * 
+     * @param {Object} dataFromForm - User form data
+     */
     const handleAcceptTerms = (dataFromForm) => {
       setFormsData(dataFromForm)
     };
@@ -61,12 +90,13 @@ export const SignInSection = () => {
           </Box>
           <Box className='form'>
             {
-            createUser ? 
+            createUser || checksum ? 
             <CreateAccountForm 
               setTermsAccepted={setTermsAccepted} 
               handleAcceptTerms={handleAcceptTerms}
               openModal={setModalOpen} 
               createUser={setCreateUser} 
+              checksum={checksum ? checksum : null}
             /> 
             :
             <SignInForm createUser={setCreateUser} />
@@ -143,6 +173,11 @@ export const SignInSection = () => {
     );
   };
 
+/**
+ * Styled component for the sign-in section layout.
+ * 
+ * @component
+ */
 const StyledImage = styled.div`
   height: 100vh;
   display: flex;

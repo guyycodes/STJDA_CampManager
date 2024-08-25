@@ -393,4 +393,3 @@ export const GET_CAMPERS_PAGINATED = gql`
     }
   }
 `;
-

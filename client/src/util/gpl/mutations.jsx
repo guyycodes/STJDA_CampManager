@@ -308,7 +308,43 @@ export const REMOVE_ASSIGNMENT = gql`
   }
 }
 `
-//////////////////////////
+// this is specifically for new users who went through the intake process
+export const REGISTER_NEW_USER = gql`
+  mutation RegisterUser(
+    $confirmPassword: String!,
+    $countryCode: String,
+    $dateOfBirth: String!,
+    $email: String!,
+    $firstName: String!,
+    $key: String!,
+    $lastName: String!,
+    $notifications: Boolean,
+    $password: String!,
+    $phone: String!,
+    $profileImage: String,
+    $role: String!,
+  ) {
+    registerUser( 
+      confirmPassword: $confirmPassword,
+      countryCode: $countryCode,
+      dateOfBirth: $dateOfBirth,
+      email: $email,
+      firstName: $firstName,
+      key: $key,
+      lastName: $lastName,
+      notifications: $notifications,
+      password: $password,
+      phone: $phone,
+      profileImage: $profileImage,
+      role: $role
+    ) {
+      success
+      message
+    }
+  }
+`;
+
+/////////////////////////////////////////////////////////////
 export const UPDATE_VOLUNTEER = gql`
   mutation UpdateVolunteer($volunteerInput: UpdateVolunteerInput!) {
     updateVolunteer(volunteerInput: $volunteerInput) {

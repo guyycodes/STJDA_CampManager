@@ -1,4 +1,8 @@
-FROM node:14
+# Use the official Node.js 20 image as a parent image
+FROM node:20-alpine
+
+# Install nano
+RUN apk update && apk add nano
 
 # Create app directory
 WORKDIR /usr/src/app

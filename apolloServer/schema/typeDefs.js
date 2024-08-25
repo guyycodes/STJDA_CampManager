@@ -185,7 +185,13 @@ type VolunteerAssignment2 {
   volunteerType: String
 }
 
+type RegisterUserResponse {
+  success: Boolean!
+  message: String!
+}
+
 union Person = Camper | Volunteer
+
 ####################
 
 type CamperCamps {
@@ -468,6 +474,21 @@ type Mutation {
 
   updateAllCampers(campers: [UpdateAllCampersInput!]!): [Camper!]!
   updateAllVolunteers(volunteers: [UpdateAllVolunteersInput!]!): [Volunteer!]!
+
+  registerUser(
+    confirmPassword: String!
+    countryCode: String
+    dateOfBirth: String!
+    email: String!
+    firstName: String!
+    key: String!
+    lastName: String!
+    notifications: Boolean
+    password: String!
+    phone: String!
+    profileImage: String
+    role: String!
+  ): RegisterUserResponse!
 }
 `;
 

@@ -25,7 +25,7 @@ const Input = styled(TextField)({
   marginBottom: 8,
 });
 
-export const CreateAccountForm = ({setTermsAccepted, handleAcceptTerms, openModal, createUser }) => {
+export const CreateAccountForm = ({setTermsAccepted, handleAcceptTerms, openModal, createUser, checksum }) => {
 
   const loginFormRef = useRef(null);
   const [formData, setFormData] = useState({
@@ -115,10 +115,14 @@ const handleImageUpload = (event) => {
   }
 };
 
-  const handleSubmit = (event) => { // validates inputs
+  const handleSubmit = (event, key = '') => { // validates inputs
     event.preventDefault();
     if (!formData.dateOfBirth) {
       setDateOfBirthError(true);
+      return;
+    }
+    if (!checksum && !formData.role) {
+      setRoleError(true);
       return;
     }
     const loginForm = loginFormRef.current;
@@ -130,6 +134,12 @@ const handleImageUpload = (event) => {
           console.log('The result is 0');
           openModal(true)  // the modal is in the parent component & handle the api call after terms accepted
           handleAcceptTerms(formData)
+        }else if(key !== ''){
+          const updatedFormData = { ...formData, key: key }
+          updatedFormData.role = 'camper'
+          openModal(true)
+          // add the key into the forms data
+          handleAcceptTerms(updatedFormData)
         }
       }else{
         setRoleError(true)
@@ -177,7 +187,7 @@ const handleImageUpload = (event) => {
         }}
       >
         <Typography component="h1" variant="h5">
-          Create Account
+          {checksum ? "Setup you new account" : "Create Account"}
         </Typography>
         <form>
           <Box display="flex" justifyContent="flex-start" mt={2} mb={2}>
@@ -203,7 +213,7 @@ const handleImageUpload = (event) => {
                 '&.Mui-focused fieldset': {
                   border: 'none', // border is removed when the TextField is focused
                 }}}}
-          />
+            />
           </Box>
           <Input
             type="file"
@@ -226,6 +236,7 @@ const handleImageUpload = (event) => {
               value={formData.firstName}
               onChange={handleChange}
               style={{ marginRight: '8px' }}
+              required='true'
             />
             <Input
               variant="outlined"
@@ -234,6 +245,7 @@ const handleImageUpload = (event) => {
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
+              required='true'
             />
           </Box>
           <TextField
@@ -287,7 +299,8 @@ const handleImageUpload = (event) => {
               fullWidth
             />
           </Box>
-          <FormControl fullWidth>
+          {/* Only show this if there is now checksum, **will only show for unconfirmed account sign up */}
+          {!checksum && <FormControl fullWidth> 
             <InputLabel id="role-label">Role</InputLabel>
             <Select
               labelId="role-label"
@@ -297,11 +310,12 @@ const handleImageUpload = (event) => {
               helpertext={roleError ? "Role is required" : ""}
               onChange={handleChange}
               name="role"
+              required='true'
             >
               {/* <MenuItem value="camper">Camper</MenuItem> */}
               <MenuItem value="volunteer">Volunteer</MenuItem>
             </Select>
-          </FormControl>
+          </FormControl>}
           <Input
             fullWidth
             variant="outlined"
@@ -322,9 +336,10 @@ const handleImageUpload = (event) => {
           />
           <FormControlLabel
             control={<Checkbox checked={formData.notifications} onChange={handleChange} name="notifications" />}
-            label={formData.role === 'camper' ?"Receive important notifications about your child at camp?" : "Receive important notifications?"}
+            label={formData.role === 'camper' ? "Receive important notifications about your child at camp?" : "Receive important notifications?"}
           />
-          <Box mt={2} mb={2}>
+          {/* Only show this if there is now checksum, **will only show for unconfirmed account sign up */}
+          { !checksum && <Box mt={2} mb={2}>
             <Button
               color="secondary"
               type="submit"
@@ -333,11 +348,11 @@ const handleImageUpload = (event) => {
             >
               Go Back
             </Button>
-          </Box>
+          </Box> }
           {
           formData.role === 'volunteer' ?           
           <Button onClick={(e) => {
-            // modal is located int the SignUpSection.jsx component which is the root for the sign in forms
+            // modal is located in the parent component SignInContainer.jsx and is passed as a prop 'openModal
             handleSubmit(e)
             setTermsAccepted(false)
             }} 
@@ -348,10 +363,10 @@ const handleImageUpload = (event) => {
           <Button 
           onClick={(e) =>{
             const node = document.querySelector(".messages")
-            handleSubmit(e)
+            handleSubmit(e, checksum)
           }} 
            type="submit" fullWidth variant="contained" color="primary" endIcon={<ChevronRightIcon />}>
-            Next
+            Create Account
           </Button>
           }
         </form>

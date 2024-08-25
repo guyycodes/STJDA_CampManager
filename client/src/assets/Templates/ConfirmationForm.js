@@ -3,12 +3,15 @@ export const formStructure = {
       {
         "name": "name",
         "label": "Name",
-        "type": "text"
+        "type": "text",
+        "helperText": "Format: FirstName LastName",
+        "required": true
       },
       {
         "name": "age",
         "label": "Age",
-        "type": "text"
+        "type": "text",
+        "required": true
       },
       {
         "name": "dateOfBirth",
@@ -125,7 +128,8 @@ export const formStructure = {
       {
         "name": "contactPhone",
         "label": "Contact Phone#",
-        "type": "text"
+        "type": "text",
+        "required": true
       },
       { // physician is uniqley managed by a method in the form component
         "name": "Physician",
