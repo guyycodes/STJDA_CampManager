@@ -311,7 +311,6 @@ export const REMOVE_ASSIGNMENT = gql`
 // this is specifically for new users who went through the intake process
 export const REGISTER_NEW_USER = gql`
   mutation RegisterUser(
-    $confirmPassword: String!,
     $countryCode: String,
     $dateOfBirth: String!,
     $email: String!,
@@ -325,7 +324,6 @@ export const REGISTER_NEW_USER = gql`
     $role: String!,
   ) {
     registerUser( 
-      confirmPassword: $confirmPassword,
       countryCode: $countryCode,
       dateOfBirth: $dateOfBirth,
       email: $email,
@@ -337,7 +335,7 @@ export const REGISTER_NEW_USER = gql`
       phone: $phone,
       profileImage: $profileImage,
       role: $role
-    ) {
+    ) { # the client does not get the data, because the data is sent between apollo server and express backend server to make the account
       success
       message
     }

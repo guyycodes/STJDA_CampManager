@@ -20,6 +20,7 @@ const redisClient = new Redis({
 config({ path: '.env' });
 
 const PORT = process.env.PORT || 3000; // Default to 3001 if process.env.PORT is not set
+const SPECIAL_PORT = process.env.SPECIAL_PORT;
 
 const app = express()
 app.use(cors({
@@ -96,9 +97,9 @@ async function connectToRedis() {
     }
 
     // Start the server
-    app.listen(PORT, () => {
+    app.listen(PORT, SPECIAL_PORT, () => {
         console.log(`Express server running on port 🔑 ${PORT}!
-        📭  query @ http://localhost:${PORT}/`);
+        📭  query @ http://localhost:${PORT}/ & http://localhost:${SPECIAL_PORT}/`);
       });     
     }
 

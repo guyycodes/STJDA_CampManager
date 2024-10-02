@@ -190,7 +190,7 @@ docker exec -it [container_id] mysql -u root -p[password] [database_name]
             dialect: 'mysql',
             ...
          });
-# Stop cleanup and restart
+# Stop cleanup and restart Docker for apollo server container
    - To start over: Make sure you cd into the server directory:
 
    #### Stop the running container
@@ -201,7 +201,7 @@ docker exec -it [container_id] mysql -u root -p[password] [database_name]
 
    #### Remove the image
    docker rmi my-apollo-server // run this on your local machine with the server code
-   docker images // remove image from both machines
+   docker images               // remove image from both machines
    docker rmi [image id]
 
    #### Rebuild the image
@@ -227,11 +227,36 @@ docker run --name my-apollo-server \
   -e NODE_ENV=development \
   gbeals1/api-servers:ApolloServer-SQL_API-v1.0
 
+# If you're running on Linux, 'host.docker.internal' might not work out of the box. In this case, you have two options:
+* 'host.docker.internal' is a special DNS name that resolves to the host machine's localhost on Docker for Windows and macOS.
+
+   a. Use the host's network IP address (usually starts with 172.17.0.1) instead of 'host.docker.internal'.
+   b. Add '--add-host=host.docker.internal:host-gateway' to your Docker run command.
+
+docker run --name my-apollo-server \
+   -p 4000:4000 \
+   --network apollo-net \
+   --add-host=host.docker.internal:host-gateway \
+   -e MASTERPORT=3306 \
+   -e SLAVEPORT=3307 \
+   -e DB_NAME=STJDA \
+   -e DB_USER=root \
+   -e DB_PW=Colorado1! \
+   -e NODE_ENV=development \
+   gbeals1/api-servers:ApolloServer-SQL_API-v1.0
+
+* Ensure your Express server on the host machine is listening on all interfaces, not just localhost:
+
+app.listen(3000, '0.0.0.0', () => {
+  console.log('Server is running on port 3000');
+});
+
+* Use docker network inspect apollo-net to ensure your Apollo server container is
 
 #### View the logs
    * docker logs -f my-apollo-server 
 #### Exec into the container
-   * docker exec -it my-apollo-server /bin/bash
+   * docker exec -it my-apollo-server /bin/sh 
 
 
 #### Command to run the schema for the database in Docker: 

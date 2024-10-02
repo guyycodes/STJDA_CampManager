@@ -1555,89 +1555,94 @@ const resolvers = {
     }
     return updatedCampers;
     },
+    registerUser: async (_, args, context) => {
+      const {
+        countryCode,
+        dateOfBirth,
+        email,
+        firstName,
+        key,
+        lastName,
+        notifications,
+        password,
+        phone,
+        profileImage,
+        role
+      } = args;
+    
+      try {
+        // Check if the key exists in Minio and get the object data
+        const bucket = 'stjda-signup-forms';
+        const minioResponse = await fetch(`http://34.135.9.49:3000/api/minioG/getObjectByKey/${bucket}/${key}`);
+        const minioData = await minioResponse.json();
+    
+        if (!minioData.exists) {
+          return {
+            success: false,
+            message: "Invalid registration key."
+          };
+        }
+    
+        // Log the data from Minio
+        console.log("Data from Minio: ", minioData.data);
+    
+        // Prepare the data to be sent to the signup endpoint
+        const signupData = {
+          ...minioData.data[0], // Spread the data from Minio
+          email,
+          password,
+          firstName,
+          lastName,
+          role,
+          countryCode,
+          dateOfBirth,
+          notifications,
+          phone,
+          profileImage
+        };
+        // apollo server is runnin on its own docker overlay network so we must adjust the endpoint
+        /**
+         * If you're running on Linux, 'host.docker.internal' might not work out of the box. In this case, you have two options:
+            a. Use the host's network IP address (usually starts with 172.17.0.1) instead of 'host.docker.internal'.
+            b. Add '--add-host=host.docker.internal:host-gateway' to your Docker run command.
+            c. an example implmentation is in the readme.md
+         */
+        // 'host.docker.internal' is a special DNS name that resolves to the host machine's localhost on Docker for Windows and macOS.
+        // Send the data to the signup endpoint
+        const signupResponse = await fetch('http://host.docker.internal:3000/api/signup/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(signupData),
+        });
+        const signupResult = await signupResponse.json();
 
-  },
-  registerUser: async (_, args, context) => {
-    const {
-      confirmPassword,
-      countryCode,
-      dateOfBirth,
-      email,
-      firstName,
-      key,
-      lastName,
-      notifications,
-      password,
-      phone,
-      profileImage,
-      role
-    } = args;
-  
-    try {
-      // Check if the key exists in Minio and get the object data
-      const bucket = 'stjda-signup-forms';
-      const minioResponse = await fetch(`http://34.135.9.49:3000/api/minioG/getObjectByKey/${bucket}/${key}`);
-      const minioData = await minioResponse.json();
-  
-      if (!minioData.exists) {
+        console.log("Signup result: ", signupResult);
+
+        // Check the response from the signup endpoint
+        if (signupResult.success) {
+          return {
+            success: true,
+            message: "User registered successfully."
+          };
+        } else {
+          return {
+            success: false,
+            message: signupResult.message || "Failed to register user."
+          };
+        }
+    
+      } catch (error) {
+        console.error("Error in registerUser resolver:", error);
         return {
           success: false,
-          message: "Invalid registration key."
+          message: "An error occurred during registration."
         };
       }
-  
-      // Log the data from Minio
-      console.log("Data from Minio:", minioData.data);
-  
-    // Prepare the data to be sent to the signup endpoint
-    const signupData = {
-      ...minioData.data, // Spread the data from Minio
-      email,
-      password,
-      firstName,
-      lastName,
-      role,
-      countryCode,
-      dateOfBirth,
-      notifications,
-      phone,
-      profileImage
-    };
-
-    // Send the data to the signup endpoint
-    const signupResponse = await fetch('http://localhost:3000/api/signup/create', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(signupData),
-    });
-    const signupResult = await signupResponse.json();
-
-    // Check the response from the signup endpoint
-    if (signupResult.success) {
-      return {
-        success: true,
-        message: "User registered successfully."
-      };
-    } else {
-      return {
-        success: false,
-        message: signupResult.message || "Failed to register user."
-      };
     }
-  
-    } catch (error) {
-      console.error("Error in registerUser resolver:", error);
-      return {
-        success: false,
-        message: "An error occurred during registration."
-      };
-    }
-
-  },// end of mutations
-
-};// end of all resolvers
+  }
+}
 
 // helper for sorting and updating
 async function updateCreateOrDeleteManySequelize(Model, data, foreignKey, foreignId) {

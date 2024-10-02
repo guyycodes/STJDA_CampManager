@@ -166,6 +166,80 @@ router.get('/validate/:token', async (req, res) => {
  * @param {string} req.body.role - User role (volunteer or camper)
  * @returns {Object} JSON object with user data and JWT token
  */
+// we made it!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!:  {
+//     selectedCamps: 'Robotics Camp, Science Camp',
+//     age: 37,
+//     email: 'guy@beals.com',
+//     guardianName: 'taylor swift',
+//     consent: true,
+//     registrationFormData: {
+//       submissionDate: '2024-08-25',
+//       firstName: 'Guy',
+//       middleName: '',
+//       lastName: 'Beals',
+//       contactPhone: '234-567-8901',
+//       sessions: [ 'session3' ],
+//       tShirtSize: 'S',
+//       birthDate: '1986-10-13',
+//       gender: 'male',
+//       diagnosisDate: '2024-08-04',
+//       allergies: 'No',
+//       primaryCarePhysician: 'Donna',
+//       officePhoneNumber: '1234567899',
+//       diabetesPhysician: 'larry T.',
+//       insulinType: 'qwerty5',
+//       parent1FirstName: 'Taylor',
+//       parent1LastName: 'Swift',
+//       parent1Mobile: '321-456-7890',
+//       parent1Email: 'taylor@swift.com',
+//       parent2FirstName: 'Kim',
+//       parent2LastName: 'Kardashian',
+//       parent2Mobile: '888-999-0000',
+//       specialInstructions: 'They like kool-aid before bed',
+//       preferredRoommate: 'Jerry Hanel',
+//       preferredLanguage: 'spanglish',
+//       'medications.ibuprofen': false,
+//       'medications.tylenol': false,
+//       'medications.benadryl': false,
+//       isMDI: true,
+//       pumpModelBrand: 'pupm123',
+//       isCGM: true,
+//       cgmModelBrand: 'Dexcom 7',
+//       carbsBreakfast: '56',
+//       carbsLunch: '78',
+//       carbsDinner: '90',
+//       mealtimeRestrictions: 'No soda before breakfast',
+//       insulinToCarbRatio: '1:5',
+//       correctionFactor: '34',
+//       target: '99',
+//       mdiInsulinType: 'qwerty5',
+//       otherDiagnosis: 'Hashimoto, aspurgers',
+//       otcMedications: 'nyquil',
+//       otherPrescriptions: 'penicilin',
+//       insulinFor15gSnack: true,
+//       correctWith15gOrLess: true,
+//       hyperglycemiaSymptoms: 'insomnia',
+//       hyperglycemiaTreatment: 'sleep',
+//       hypoglycemiaSymptoms: 'sleepiness',
+//       hypoglycemiaTreatment: 'excercise',
+//       diabetesManagementStruggles: 'Confidence',
+//       glucoseSensitiveFoods: 'Rice, Corn',
+//       rapidActingInsulinType: 'qwerty5',
+//       longActingInsulinType: 'qwerty6',
+//       isCompleted: true,
+//       role: 'camper',
+//       document: null,
+//       signature: 'Guy Beals'
+//     },
+//     password: 'Colorado1!',
+//     firstName: 'Guy',
+//     lastName: 'Beals',
+//     role: 'camper',
+//     countryCode: '+1 🇺🇸',
+//     dateOfBirth: '1991-10-13',
+//     notifications: true,
+//     phone: '3034958899',
+//     profileImage: 'data:image/jpeg;base64,/9j...}
 router.post('/create', async (req,res)=>{
     let userData;
     let originsData;
@@ -175,12 +249,14 @@ router.post('/create', async (req,res)=>{
     let overTheCounterMedication;
     let prescriptions;
     let medicalNotes;
-
+    
+    console.log("we made it!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!: ", req.body)
+    res.status(200).json({ message: "request recieve.", success: true })
+    return
     // parse through the req.body
     if (!req.body) {
         return res.status(400).json({ message: "Bad request, no data provided" });
 
-    
     }else if(req.body.role === 'volunteer'){
         userData = {
             // ID: null,

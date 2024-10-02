@@ -48,7 +48,7 @@ export const ValidateToken = () => {
       try {
         const response = await axios.get(`http://localhost:3000/api/signup/validate/${tokenFromUrl}`);
         if (response.data.valid) {
-          setIsValidated(true);
+          setIsValidated(true); // this changes to the login component
           setChecksum(response.data.key)
           // Start fading out the background
           const fadeOutInterval = setInterval(() => {

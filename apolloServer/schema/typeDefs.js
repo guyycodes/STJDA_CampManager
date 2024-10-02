@@ -476,7 +476,6 @@ type Mutation {
   updateAllVolunteers(volunteers: [UpdateAllVolunteersInput!]!): [Volunteer!]!
 
   registerUser(
-    confirmPassword: String!
     countryCode: String
     dateOfBirth: String!
     email: String!

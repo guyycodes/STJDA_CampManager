@@ -5,6 +5,21 @@ import { SignUpImage } from "../assets/SignInPageImage/index.js";
 import { Modal, Box, Typography, Button, Checkbox, FormControlLabel, CircularProgress } from "@mui/material";
 import { useNavigate } from 'react-router-dom'; 
 import { isSHA256 } from '../util/DataIntegrity'
+import { useMutation } from "@apollo/client";
+import { REGISTER_NEW_USER, handleApolloError } from "../util/gpl";
+
+const FullScreenSpinner = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+`;
 
 /**
  * SignInSection component handles user sign-in and account creation processes.
@@ -22,7 +37,34 @@ export const SignInSection = ({ checksum }) => { // the checksum is passed all t
     const [createUser, setCreateUser] = useState(false);
     const [formsData, setFormsData] = useState()
     const [spinner, setSpinner] = useState()
-
+    const [fadeOut, setFadeOut] = useState(false);
+    const [fullScreenSpinner, setFullScreenSpinner] = useState(false);
+    // GraphQL REGISTER_NEW_USER hook
+    const [registerNewUser, { data, loading, error }] = useMutation(REGISTER_NEW_USER, {
+      onCompleted: (data) => {
+        console.log("Success data: ", data);
+        if (data && data.registerUser) {
+          const { success, message } = data.registerUser;
+          if (success) {
+            setSpinner(false);
+            setFadeOut(true);
+            setTimeout(() => {
+              setModalOpen(false);
+              setFullScreenSpinner(true);
+              setTimeout(() => {
+                setFullScreenSpinner(false);
+                navigate('/');
+              }, 5000);
+            }, 1750); // Adjust this value to control fade-out duration
+          } else {
+            alert(message || "Registration failed. Please try again.");
+          }
+        } else {
+          console.error("Unexpected response structure:", data);
+          alert("An unexpected error occurred. Please try again.");
+        }
+      },onError: (error) => handleApolloError(error, 'Registering new user - Sign-In')
+    })
     /**
      * Parses the URL from the server response and navigates to the corresponding route.
      * 
@@ -67,6 +109,22 @@ export const SignInSection = ({ checksum }) => { // the checksum is passed all t
       }else if(termsAccepted && (isSHA256(theFormData.key))){
         console.log("we have the checksum: ", isSHA256(theFormData.key), theFormData)
         // call apollo server and send the checksum
+        setSpinner(true);
+        setTimeout(() => {
+          registerNewUser({variables: {        
+            countryCode: theFormData.countryCode,
+            dateOfBirth: theFormData.dateOfBirth,
+            email: theFormData.email,
+            firstName: theFormData.firstName,
+            key: theFormData.key,
+            lastName: theFormData.lastName,
+            notifications: theFormData.notifications,
+            password: theFormData.password,
+            phone: theFormData.phone,
+            profileImage: theFormData.profileImage,
+            role: theFormData.role
+          }})
+        }, 2000); 
       }
       else{
         alert('Oops! 😅 Doesnt look like you accepted the terms: \n To create an account you must accept the terms')
@@ -118,7 +176,9 @@ export const SignInSection = ({ checksum }) => { // the checksum is passed all t
                 bgcolor: 'background.paper', 
                 border: '2px solid #000', 
                 boxShadow: 24, 
-                p: 4 
+                p: 4,
+                opacity: fadeOut ? 0 : 1,
+                transition: 'opacity 1s ease-out'
               }}>
 
               <Typography id="modal-modal-title" variant="h6" component="h2">
@@ -149,15 +209,7 @@ export const SignInSection = ({ checksum }) => { // the checksum is passed all t
                       variant="contained" 
                       color="primary" 
                       onClick={() => {
-                        setSpinner(true);
-                        setTimeout(() => {
-                          setSpinner(false);
-                        }, 3250); 
-
-                        setSpinner(true);
-                        setTimeout(() => {
-                          submitUser(formsData);
-                        }, 2000);  // 1500 milliseconds delay
+                        submitUser(formsData);
                       }}>
                       OK
                     </Button>
@@ -169,6 +221,11 @@ export const SignInSection = ({ checksum }) => { // the checksum is passed all t
             </Box>
           </Modal>
         </Box>
+        {fullScreenSpinner && (
+        <FullScreenSpinner>
+          <CircularProgress size={60} />
+        </FullScreenSpinner>
+      )}
       </StyledImage>
     );
   };
